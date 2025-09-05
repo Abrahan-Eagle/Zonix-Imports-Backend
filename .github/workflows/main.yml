@@ -53,14 +53,26 @@ jobs:
           echo "Probando resolución DNS..."
           nslookup ${{ secrets.FTP_SERVER }} || echo "❌ Error en resolución DNS"
 
-      # Paso 7: Desplegar archivos por FTP
+      # Paso 7: Desplegar archivos por FTP (configuración básica para servidor compartido)
       - name: FTP-Deploy-Action
         uses: SamKirkland/FTP-Deploy-Action@4.3.3
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          logLevel: verbose
+          protocol: ftp
+          port: 21
+          log-level: verbose
+          timeout: 30000
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/tests/**
+            **/storage/logs/**
+            **/storage/framework/cache/**
+            **/storage/framework/sessions/**
+            **/storage/framework/views/**
 
       # Paso 8: Configurar el archivo .env desde los secretos
       - name: Setup environment file
