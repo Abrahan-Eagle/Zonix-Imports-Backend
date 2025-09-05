@@ -73,16 +73,24 @@ jobs:
           echo "Testing FTP connection..."
           timeout 30 bash -c "</dev/tcp/${{ secrets.FTP_SERVER }}/21" && echo "FTP port 21 is accessible" || echo "FTP port 21 is not accessible"
           timeout 30 bash -c "</dev/tcp/${{ secrets.FTP_SERVER }}/990" && echo "FTPS port 990 is accessible" || echo "FTPS port 990 is not accessible"
+          
+      # Paso 8.6: Crear archivo de prueba para verificar el despliegue
+      - name: Create test file
+        run: |
+          echo "Creating test file for deployment verification..."
+          echo "Deployment test - $(date)" > deployment_test.txt
+          echo "Git commit: ${{ github.sha }}" >> deployment_test.txt
 
-      # Paso 9: Desplegar archivos por FTP con configuraciones mejoradas
+      # Paso 9: Desplegar archivos usando FTP simple (sin SSL para evitar problemas de certificados)
       - name: FTP-Deploy-Action
         uses: SamKirkland/FTP-Deploy-Action@4.3.3
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          timeout: 60000
+          protocol: ftp
+          timeout: 120000
+          logLevel: verbose
           exclude: |
             **/.git*
             **/.git*/**
@@ -94,6 +102,8 @@ jobs:
             **/storage/framework/cache/**
             **/storage/framework/sessions/**
             **/storage/framework/views/**
+            **/vendor/**
+            **/bootstrap/cache/**
 
       # Paso 10: Configurar permisos de directorios (optimizado para servidor compartido)
       - name: Set directory permissions
@@ -112,4 +122,4 @@ jobs:
       - name: Verify deployment
         run: |
           echo "Verifying deployment..."
-          curl -f https://backend.corralx.com/api/env-test || echo "API endpoint not accessible"
+          curl -f https://zonix-imports.aiblockweb.com/api/env-test || echo "API endpoint not accessible"
