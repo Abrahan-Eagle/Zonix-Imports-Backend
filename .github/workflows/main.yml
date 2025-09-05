@@ -37,32 +37,49 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --optimize-autoloader
 
-      # Paso 6: Desplegar archivos por FTP
+      # Paso 6: Diagnosticar conexión FTP antes del despliegue
+      - name: Diagnose FTP connection
+        run: |
+          echo "=== DIAGNÓSTICO FTP ==="
+          echo "Servidor: ${{ secrets.FTP_SERVER }}"
+          echo "Usuario: ${{ secrets.FTP_USERNAME }}"
+          echo "Contraseña: [OCULTA]"
+          echo ""
+          echo "Probando conectividad..."
+          timeout 10 bash -c "</dev/tcp/${{ secrets.FTP_SERVER }}/21" && echo "✅ Puerto 21 accesible" || echo "❌ Puerto 21 NO accesible"
+          timeout 10 bash -c "</dev/tcp/${{ secrets.FTP_SERVER }}/22" && echo "✅ Puerto 22 accesible" || echo "❌ Puerto 22 NO accesible"
+          timeout 10 bash -c "</dev/tcp/${{ secrets.FTP_SERVER }}/990" && echo "✅ Puerto 990 accesible" || echo "❌ Puerto 990 NO accesible"
+          echo ""
+          echo "Probando resolución DNS..."
+          nslookup ${{ secrets.FTP_SERVER }} || echo "❌ Error en resolución DNS"
+
+      # Paso 7: Desplegar archivos por FTP
       - name: FTP-Deploy-Action
         uses: SamKirkland/FTP-Deploy-Action@4.3.3
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          logLevel: verbose
 
-      # Paso 7: Configurar el archivo .env desde los secretos
+      # Paso 8: Configurar el archivo .env desde los secretos
       - name: Setup environment file
         run: |
           echo "Setting up .env from secrets..."
           echo "${{ secrets.ENV_CONTENT }}" > .env
           cat .env # Para depurar y verificar el contenido del .env
 
-      # Paso 8: Habilitar depuración de Laravel
+      # Paso 9: Habilitar depuración de Laravel
       - name: Enable Laravel debug
         run: |
           echo "APP_DEBUG=true" >> .env
           sed -i 's/APP_DEBUG=.*/APP_DEBUG=true/' .env # Asegúrate de que APP_DEBUG sea true para ver los errores en el entorno de producción
 
-      # Paso 9: Configurar permisos de directorios
+      # Paso 10: Configurar permisos de directorios
       - name: Set directory permissions
         run: chmod -R 775 storage bootstrap/cache
 
-      # Paso 10: Verificar si el archivo .env está cargado correctamente
+      # Paso 11: Verificar si el archivo .env está cargado correctamente
       - name: Check .env setup
         run: |
           echo "Verifying .env configuration..."
@@ -72,7 +89,7 @@ jobs:
           php artisan config:cache
           php artisan storage:link
 
-      # Paso 11: Verificar las variables de entorno en Laravel (opcional)
+      # Paso 12: Verificar las variables de entorno en Laravel (opcional)
       - name: Test .env variables
         run: |
           curl https://zonix-imports.aiblockweb.com/api/env-test
