@@ -33,75 +33,63 @@ jobs:
           php-version: '8.2' # Ajusta a la versión de PHP usada en tu proyecto Laravel
           tools: 'composer'
 
-      # Paso 5: Instalar dependencias PHP
-      - name: Install PHP dependencies
-        run: composer install --optimize-autoloader
-
-      # Paso 6: Diagnosticar conexión FTP antes del despliegue
-      - name: Diagnose FTP connection
+      # Paso 5: Configurar el archivo .env desde los secretos (ANTES del despliegue)
+      - name: Setup environment file
         run: |
-          echo "=== DIAGNÓSTICO FTP ==="
-          echo "Servidor: ${{ secrets.FTP_SERVER }}"
-          echo "Usuario: ${{ secrets.FTP_USERNAME }}"
-          echo "Contraseña: [OCULTA]"
-          echo ""
-          echo "Probando conectividad..."
-          timeout 10 bash -c "</dev/tcp/${{ secrets.FTP_SERVER }}/21" && echo "✅ Puerto 21 accesible" || echo "❌ Puerto 21 NO accesible"
-          timeout 10 bash -c "</dev/tcp/${{ secrets.FTP_SERVER }}/22" && echo "✅ Puerto 22 accesible" || echo "❌ Puerto 22 NO accesible"
-          timeout 10 bash -c "</dev/tcp/${{ secrets.FTP_SERVER }}/990" && echo "✅ Puerto 990 accesible" || echo "❌ Puerto 990 NO accesible"
-          echo ""
-          echo "Probando resolución DNS..."
-          nslookup ${{ secrets.FTP_SERVER }} || echo "❌ Error en resolución DNS"
+          echo "Setting up .env from secrets..."
+          echo "${{ secrets.ENV_CONTENT }}" > .env
+          # Asegurar que APP_DEBUG sea false en producción
+          sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env
+          cat .env # Para depurar y verificar el contenido del .env
 
-      # Paso 7: Desplegar archivos por FTP (configuración básica para servidor compartido)
+      # Paso 6: Instalar dependencias PHP (incluyendo dev para seeders)
+      - name: Install PHP dependencies
+        run: composer install --optimize-autoloader --no-interaction
+
+      # Paso 7: Optimizar Laravel para producción
+      - name: Optimize Laravel for production
+        run: |
+          php artisan config:clear
+          php artisan cache:clear
+          php artisan route:clear
+          php artisan view:clear
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+
+      # Paso 8: Crear directorios necesarios antes del despliegue
+      - name: Create required directories
+        run: |
+          echo "Creating required directories..."
+          mkdir -p storage/logs
+          mkdir -p storage/framework/cache
+          mkdir -p storage/framework/sessions
+          mkdir -p storage/framework/views
+          mkdir -p bootstrap/cache
+
+      # Paso 9: Desplegar archivos por FTP
       - name: FTP-Deploy-Action
         uses: SamKirkland/FTP-Deploy-Action@4.3.3
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
-          port: 21
-          log-level: verbose
-          timeout: 30000
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/tests/**
-            **/storage/logs/**
-            **/storage/framework/cache/**
-            **/storage/framework/sessions/**
-            **/storage/framework/views/**
 
-      # Paso 8: Configurar el archivo .env desde los secretos
-      - name: Setup environment file
-        run: |
-          echo "Setting up .env from secrets..."
-          echo "${{ secrets.ENV_CONTENT }}" > .env
-          cat .env # Para depurar y verificar el contenido del .env
-
-      # Paso 9: Habilitar depuración de Laravel
-      - name: Enable Laravel debug
-        run: |
-          echo "APP_DEBUG=true" >> .env
-          sed -i 's/APP_DEBUG=.*/APP_DEBUG=true/' .env # Asegúrate de que APP_DEBUG sea true para ver los errores en el entorno de producción
-
-      # Paso 10: Configurar permisos de directorios
+      # Paso 10: Configurar permisos de directorios (optimizado para servidor compartido)
       - name: Set directory permissions
-        run: chmod -R 775 storage bootstrap/cache
-
-      # Paso 11: Verificar si el archivo .env está cargado correctamente
-      - name: Check .env setup
         run: |
-          echo "Verifying .env configuration..."
-          cat .env
-          php artisan config:clear
-          php artisan cache:clear
-          php artisan config:cache
-          php artisan storage:link
+          echo "Setting up directory permissions for shared hosting..."
+          chmod -R 755 storage bootstrap/cache
+          chmod -R 644 .env
 
-      # Paso 12: Verificar las variables de entorno en Laravel (opcional)
-      - name: Test .env variables
+      # Paso 11: Crear enlace simbólico de storage (si es necesario)
+      - name: Create storage link
         run: |
-          curl https://zonix-imports.aiblockweb.com/api/env-test
+          echo "Creating storage link..."
+          php artisan storage:link || echo "Storage link already exists or not needed"
+
+      # Paso 12: Verificar el despliegue
+      - name: Verify deployment
+        run: |
+          echo "Verifying deployment..."
+          curl -f https://backend.corralx.com/api/env-test || echo "API endpoint not accessible"
