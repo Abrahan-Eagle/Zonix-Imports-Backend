@@ -1,0 +1,95 @@
+name: Publish Website to CPanel
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  FTP-Deploy-Action:
+    name: FTP-Deploy-Action
+    runs-on: ubuntu-latest
+
+    steps:
+      # Paso 1: Instalar Node.js 20
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      # Paso 2: Clonar el repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      # Paso 3: Instalar dependencias de Node.js y compilar activos
+      - name: Build assets
+        run: npm install && npm run build
+
+      # Paso 4: Instalar PHP y Composer
+      - name: Install PHP and Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2' # Ajusta a la versión de PHP usada en tu proyecto Laravel
+          tools: 'composer'
+
+      # Paso 5: Configurar el archivo .env desde los secretos (ANTES del despliegue)
+      - name: Setup environment file
+        run: |
+          echo "Setting up .env from secrets..."
+          echo "${{ secrets.ENV_CONTENT }}" > .env
+          # Asegurar que APP_DEBUG sea false en producción
+          sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env
+          cat .env # Para depurar y verificar el contenido del .env
+
+      # Paso 6: Instalar dependencias PHP (incluyendo dev para seeders)
+      - name: Install PHP dependencies
+        run: composer install --optimize-autoloader --no-interaction
+
+      # Paso 7: Optimizar Laravel para producción
+      - name: Optimize Laravel for production
+        run: |
+          php artisan config:clear
+          php artisan cache:clear
+          php artisan route:clear
+          php artisan view:clear
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+
+      # Paso 8: Crear directorios necesarios antes del despliegue
+      - name: Create required directories
+        run: |
+          echo "Creating required directories..."
+          mkdir -p storage/logs
+          mkdir -p storage/framework/cache
+          mkdir -p storage/framework/sessions
+          mkdir -p storage/framework/views
+          mkdir -p bootstrap/cache
+
+      # Paso 9: Desplegar archivos por FTP
+      - name: FTP-Deploy-Action
+        uses: SamKirkland/FTP-Deploy-Action@4.3.3
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+
+      # Paso 10: Configurar permisos de directorios (optimizado para servidor compartido)
+      - name: Set directory permissions
+        run: |
+          echo "Setting up directory permissions for shared hosting..."
+          chmod -R 755 storage bootstrap/cache
+          chmod -R 644 .env
+
+      # Paso 11: Crear enlace simbólico de storage (si es necesario)
+      - name: Create storage link
+        run: |
+          echo "Creating storage link..."
+          php artisan storage:link || echo "Storage link already exists or not needed"
+
+      # Paso 12: Verificar el despliegue
+      - name: Verify deployment
+        run: |
+          echo "Verifying deployment..."
+          curl -f https://backend.corralx.com/api/env-test || echo "API endpoint not accessible"
