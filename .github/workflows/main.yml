@@ -67,13 +67,33 @@ jobs:
           mkdir -p storage/framework/views
           mkdir -p bootstrap/cache
 
-      # Paso 9: Desplegar archivos por FTP
+      # Paso 8.5: Verificar conectividad FTP antes del despliegue
+      - name: Test FTP connection
+        run: |
+          echo "Testing FTP connection..."
+          timeout 30 bash -c "</dev/tcp/${{ secrets.FTP_SERVER }}/21" && echo "FTP port 21 is accessible" || echo "FTP port 21 is not accessible"
+          timeout 30 bash -c "</dev/tcp/${{ secrets.FTP_SERVER }}/990" && echo "FTPS port 990 is accessible" || echo "FTPS port 990 is not accessible"
+
+      # Paso 9: Desplegar archivos por FTP con configuraciones mejoradas
       - name: FTP-Deploy-Action
         uses: SamKirkland/FTP-Deploy-Action@4.3.3
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          timeout: 60000
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.env
+            **/.env.*
+            **/tests/**
+            **/storage/logs/**
+            **/storage/framework/cache/**
+            **/storage/framework/sessions/**
+            **/storage/framework/views/**
 
       # Paso 10: Configurar permisos de directorios (optimizado para servidor compartido)
       - name: Set directory permissions
