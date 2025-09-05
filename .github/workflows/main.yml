@@ -1,4 +1,4 @@
-name: Publish Website to CPanel
+name: Publish Website to CPanelx
 on:
   push:
     branches:
@@ -92,4 +92,4 @@ jobs:
       - name: Verify deployment
         run: |
           echo "Verifying deployment..."
-          curl -f https://backend.corralx.com/api/env-test || echo "API endpoint not accessible"
+          curl -f https://imports.aiblockweb.com/api/env-test || echo "API endpoint not accessible"
