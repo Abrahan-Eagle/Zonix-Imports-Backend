@@ -1,4 +1,4 @@
-name: Publish Website to CPanelx
+name: Publish Website to CPanel
 on:
   push:
     branches:
