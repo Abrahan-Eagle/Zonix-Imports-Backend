@@ -1,0 +1,125 @@
+# .cursorrules
+
+rules:
+  - type: project
+    value: |
+      Proyecto: MVP de e-commerce multi-modal para Venezuela.
+      Visión: Venta al detal, mayor, pre-order (abonos), referidos y dropshipping interno.
+      Pagos descentralizados por vendedor: Stripe, PayPal, Pago Móvil, Zelle, Binance Pay/USDT.
+
+      Roles principales:
+      - Comprador (por defecto)
+      - Vendedor (publica productos, inventario, pedidos, referidos, dropshipping)
+      - Administrador (usuarios, pedidos, disputas, productos)
+
+      Alcance Backend (MVP):
+      - Laravel 10 + PHP 8.2 + MySQL 8
+      - Auth: Google OAuth2 + Laravel Sanctum (tokens API)
+      - Productos (modalidades), catálogo, carrito, checkout, pedidos
+      - Pagos via API (Stripe/PayPal/Binance) + manual (Pago Móvil/Zelle)
+      - Notificaciones (correo e internas)
+      - Panel Admin mínimo
+
+  - type: coding
+    value: |
+      Estándares y convenciones (Backend Laravel):
+      - General:
+        - Commits convencionales: tipo(scope): resumen (feat, fix, refactor, docs, chore)
+        - Revisiones pequeñas; pruebas locales obligatorias (`php artisan test`)
+        - Mantener KPIs: API pequeñas ≤2s; grandes ≤4s (paginación)
+      - PHP / Laravel 10:
+        - PSR-12; tipado estricto cuando sea posible
+        - Controllers delgados; lógica en `Services` y `Actions`
+        - Validación con `FormRequest`; respuestas JSON consistentes
+        - Autenticación: Sanctum (SPA/API) + Google OAuth2 para login
+        - Policies/Middleware para roles y permisos
+        - Rutas API bajo prefijo `/api` y versionado si aplica
+        - Webhooks idempotentes (firma + replay protection)
+        - Errores: códigos HTTP adecuados; no exponer trazas en producción
+        - Respuesta de error estándar: { message, errors?, code }
+      - Base de Datos (MySQL 8):
+        - Eloquent ORM; evitar SQL crudo salvo necesidad justificada
+        - Índices en campos de búsqueda y FK; integridad referencial
+        - Timestamps `created_at`, `updated_at`; soft deletes cuando aplique
+        - Seeders para datos base; migraciones versionadas
+      - Seguridad:
+        - HTTPS (TLS 1.2+); CORS restringido; CSRF para vistas si aplica
+        - Sanitización de inputs; evitar inyección SQL/XSS
+        - Secrets solo en `.env`; rotación de llaves cuando aplique
+        - Rate limiting en auth y webhooks
+        - Logs sin datos sensibles (PII, tokens, tarjetas)
+        - Validación de firma de webhooks y deduplicación por `event_id`
+      - Rendimiento:
+        - Paginación por defecto en listados
+        - Eager loading para evitar N+1 (`with`, `load`)
+        - Cache básico para datos estáticos (ej. categorías)
+        - Consultas grandes: seleccionar columnas necesarias; evitar `*`
+        - Índices en columnas de filtros frecuentes (estado, vendedor_id, created_at)
+      - Observabilidad:
+        - Uso de `logging.php`; canales separados para webhooks si aplica
+        - IDs de correlación en eventos críticos (pedido/pago)
+
+  - type: data_model
+    value: |
+      Tablas principales:
+      - usuarios (id, nombre, email, rol, rif?, banco?, direccion?, created_at…)
+      - productos (id, vendedor_id, nombre, descripcion, modalidad, precio_base, stock, min_mayor?, precio_mayor?, preorden_entrega?, video_url?)
+      - imagenes_producto (id, producto_id, url)
+      - pedidos (id, comprador_id, vendedor_id, total, modalidad, estado, created_at…)
+      - items_pedido (id, pedido_id, producto_id, cantidad, precio_unitario, subtotal)
+      - pagos (id, pedido_id, metodo, monto, estado, referencia, comprobante_url?, created_at)
+      - inventario_movimientos (id, producto_id, tipo, cantidad, motivo, created_at)
+      - referidos (id, producto_id, referidor_id, porcentaje, link, activo)
+      - notificaciones (id, usuario_id, tipo, mensaje, leido, created_at)
+
+  - type: api_endpoints
+    value: |
+      Endpoints mínimos (prefijo /api):
+      - POST /auth/google → login con OAuth2
+      - GET /me → perfil actual
+      - PUT /me/rol → cambio a vendedor (validaciones)
+      - CRUD /productos → publicación y gestión
+      - GET /productos?filtros… → catálogo (paginado)
+      - POST /carrito → agregar producto
+      - DELETE /carrito/{item} → eliminar del carrito
+      - POST /checkout → crear pedido
+      - POST /pagos/stripe|paypal|binance → intentos de pago
+      - POST /webhooks/{proveedor} → confirmación de pago (idempotente)
+        - Validar firma y registrar `event_id` procesado
+      - POST /pagos/comprobante → pago manual (Pago Móvil/Zelle)
+      - GET /pedidos (del comprador)
+      - GET /vendedor/pedidos
+      - PUT /vendedor/pedidos/{id}/estado
+      - GET /notificaciones
+
+  - type: contribution
+    value: |
+      Guía de contribución (Backend):
+      - Ejecutar `composer install` y configurar `.env` antes de desarrollar
+      - Correr migraciones/seeders: `php artisan migrate --seed`
+      - Ejecutar pruebas: `php artisan test` (obligatorio antes de PR)
+      - Estandarizar respuestas API (estructura y códigos); documentar breaking changes
+      - Revisar tiempos de respuesta en endpoints críticos (checkout, pagos)
+      - Ramas: `feat/*`, `fix/*`, `chore/*`, `docs/*`
+      - Prohibido subir secrets o dumps de DB; uso de `storage/` vía `storage:link`
+
+  - type: tasks
+    value: |
+      Roadmap Backend (MVP):
+      - Semana 1:
+        * Infraestructura y base de proyecto (Laravel)
+        * Migraciones base y seeders
+        * Login con Google OAuth2 + Sanctum
+      - Semana 2:
+        * API de productos y catálogo (paginado)
+        * Carrito, Checkout y creación de pedidos
+      - Semana 3:
+        * Publicación y modalidades (mayor, pre-order, referidos, dropshipping)
+        * Inventario del vendedor y gestión de pedidos
+        * Webhooks de pagos (Stripe/PayPal/Binance)
+      - Semana 4:
+        * Panel de administración mínimo
+        * QA (tests) y deploy
+        * Monitoreo básico y backup
+
+
