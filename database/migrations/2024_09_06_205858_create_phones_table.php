@@ -13,14 +13,18 @@ return new class extends Migration
     {
         Schema::create('phones', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('profile_id')->constrained('profiles')->onDelete('cascade');
-            $table->foreignId('operator_code_id')->constrained('operator_codes')->onDelete('cascade');
-            $table->string('number', 7); // Número local con longitud fija
+            $table->foreignId('profile_id')->constrained()->onDelete('cascade');
+            
+            // Número de teléfono completo
+            $table->string('operator_code', 4); // Código directo (0412, 0424, etc.)
+            $table->string('country_code', 4)->default('+58'); // Código de país
+            $table->string('number', 7); // Número local
+            
+            // Configuración
             $table->boolean('is_primary')->default(false);
-            $table->boolean('status')->default(true); // se muestra el correo solo si esta activo
-            $table->boolean('approved')->default(false);// significa si el documento esta aprovado
+            $table->boolean('is_active')->default(true); // Más claro que 'status'
+            
             $table->timestamps();
-
         });
     }
 

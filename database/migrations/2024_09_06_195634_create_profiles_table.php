@@ -15,18 +15,28 @@ return new class extends Migration
            $table->bigIncrements('id');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
 
-
+            // Datos personales
             $table->string('firstName');
             $table->string('middleName')->nullable();
             $table->string('lastName');
             $table->string('secondLastName')->nullable();
             $table->string('photo_users')->nullable();
             $table->date('date_of_birth')->nullable();
-            $table->enum('maritalStatus', ['married', 'divorced', 'single', 'widowed'])->default('single');
-            $table->enum('sex', ['F', 'M', 'O'])->default('M');
+            
+            // Rol del usuario (simplificado para MVP)
+            $table->enum('role', ['buyer', 'seller', 'admin'])->default('buyer');
+            
+            // Estado del perfil
             $table->enum('status', ['completeData', 'incompleteData', 'notverified'])->default('notverified');
+            $table->boolean('is_verified')->default(false);
+            
+            // Contacto
             $table->string('phone')->nullable();
-            $table->text('address')->nullable();
+            
+            // Datos para vendedores (requeridos según .cursorrules)
+            $table->string('rif')->nullable(); // RIF del vendedor
+            $table->string('bank_account')->nullable(); // Cuenta bancaria para pagos descentralizados
+            
             $table->timestamps();
 
         });

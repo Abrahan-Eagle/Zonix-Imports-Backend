@@ -3,11 +3,24 @@
 API REST para el MVP de e‑commerce multi‑modal en Venezuela (detal, mayor, pre‑order con abonos, referidos, dropshipping). Pagos descentralizados por vendedor (Stripe, PayPal, Pago Móvil, Zelle, Binance Pay/USDT). Basado en Laravel 10 + MySQL 8.
 
 ### 0) Modelo de negocio (reglas en API)
-- Detal: requiere stock; `precio_unitario`.
-- Mayor: campos `min_mayor` y `precio_mayor`; validar cantidad mínima en carrito/checkout.
-- Pre‑order: `preorden_entrega` (ETA); registrar abonos (pagos parciales) y saldo; entregar solo con 100% pago.
-- Referidos: `referidos` con `porcentaje` y `link`; atribución por link; registrar comisiones.
-- Dropshipping interno: referencia a `producto_origen`; validar stock del origen en compra; liquidación entre vendedores (reglas mínimas en MVP).
+
+#### **Modalidades de Venta:**
+- **Detal (retail)**: Requiere stock; usa `base_price` como precio unitario.
+- **Mayor (wholesale)**: Campos `min_wholesale_quantity` y `wholesale_price`; validar cantidad mínima en carrito/checkout.
+- **Pre-order**: Campo `preorder_eta` (ETA); registrar abonos (pagos parciales) con estado `partially_paid`; entregar solo con 100% pago.
+- **Referidos**: Tabla `referrals` con `percentage` y `link` único; atribución por link; registrar `commission_earned`.
+- **Dropshipping interno**: Campo `origin_product_id`; validar stock del origen en compra; liquidación entre vendedores (reglas mínimas en MVP).
+
+#### **Pagos Descentralizados:**
+- Cada vendedor (`commerces`) habilita sus métodos de pago en `payment_methods` JSON.
+- **API**: Stripe, PayPal, Binance Pay (webhooks idempotentes con `processed_webhook_events`).
+- **Manual**: Pago Móvil, Zelle (subir comprobante → validación vendedor → auditoría admin).
+- Validación de operadoras (`operator_codes`) y bancos (`banks`) para pagos locales.
+
+#### **Roles y Verificación:**
+- **Comprador (buyer)**: Por defecto, puede comprar.
+- **Vendedor (seller)**: Requiere RIF, banco, documentos verificados; puede publicar productos.
+- **Admin**: Gestiona usuarios, pedidos, disputas, productos.
 
 ### 1) Requisitos
 - PHP 8.2+
@@ -59,29 +72,82 @@ API REST para el MVP de e‑commerce multi‑modal en Venezuela (detal, mayor, p
  - Estándar de respuesta de error: `{ message, errors?, code }`
 
 ### 4) Modelo de datos (tablas clave)
-- `usuarios`
-- `productos`, `imagenes_producto`
-- `pedidos`, `items_pedido`
-- `pagos`
-- `inventario_movimientos`
-- `referidos`
-- `notificaciones`
+
+#### **Autenticación y Usuarios:**
+- `users` - Usuarios del sistema (Laravel Auth)
+- `profiles` - Perfiles extendidos (1:1 con users) + roles + datos vendedor
+- `personal_access_tokens` - Tokens Sanctum para API
+
+#### **E-commerce Core:**
+- `commerces` - Vendedores/comercios + métodos de pago habilitados
+- `categories` - Categorías de productos
+- `products` - Productos con modalidades (detal, mayor, pre-order, referidos, dropshipping)
+- `product_images` - Múltiples imágenes por producto
+- `cart_items` - Carrito persistente con snapshot de precios
+- `orders` - Pedidos con modalidades y estados
+- `order_items` - Items del pedido con subtotales
+
+#### **Pagos y Finanzas:**
+- `payments` - Pagos (API + manuales) con external_id y moneda
+- `processed_webhook_events` - Idempotencia de webhooks
+- `banks` - Bancos para Pago Móvil y transferencias
+- `referrals` - Programa de referidos con comisiones
+
+#### **Inventario y Logística:**
+- `inventory_movements` - Movimientos de stock con trazabilidad
+- `addresses` - Direcciones de envío con referencias
+- `notifications` - Notificaciones con prioridad
+
+#### **Contacto y Documentación:**
+- `phones` - Múltiples teléfonos por usuario
+- `operator_codes` - Códigos de operadoras para Pago Móvil
+- `documents` - Documentos de verificación (RIF, CI, etc.)
+- `countries`, `states`, `cities` - Datos geográficos
+
+#### **Infraestructura Laravel:**
+- `cache`, `jobs`, `password_reset_tokens` - Tablas del framework
 
 ### 5) Endpoints API (mínimos)
 Prefijo `/api`.
-- POST `/auth/google` → login
-- GET `/me` → perfil
-- PUT `/me/rol` → cambio a vendedor (RIF/banco/dirección requeridos)
-- CRUD `/productos` y GET `/productos?filtros...`
-- POST `/carrito`, DELETE `/carrito/{item}`
-- POST `/checkout`
-- POST `/pagos/stripe|paypal|binance` → intentos de pago
-- POST `/webhooks/{proveedor}` → confirmaciones (idempotentes)
-- POST `/pagos/comprobante` → flujo manual Pago Móvil/Zelle
-- GET `/pedidos` (del comprador)
-- GET `/vendedor/pedidos`
-- PUT `/vendedor/pedidos/{id}/estado`
-- GET `/notificaciones`
+
+#### **Autenticación:**
+- POST `/auth/google` → login con OAuth2
+- GET `/me` → perfil actual
+- PUT `/me/role` → cambio a vendedor (RIF/banco/documentos requeridos)
+
+#### **Productos y Catálogo:**
+- CRUD `/products` → gestión de productos
+- GET `/products?filtros...` → catálogo paginado con modalidades
+- POST `/products/{id}/images` → subir imágenes
+- GET `/categories` → categorías disponibles
+
+#### **Carrito y Checkout:**
+- POST `/cart` → agregar producto al carrito
+- GET `/cart` → obtener carrito del usuario
+- PUT `/cart/{item}` → actualizar cantidad
+- DELETE `/cart/{item}` → eliminar del carrito
+- POST `/checkout` → crear pedido
+
+#### **Pagos:**
+- POST `/payments/stripe|paypal|binance` → intentos de pago API
+- POST `/payments/comprobante` → flujo manual Pago Móvil/Zelle
+- POST `/webhooks/{provider}` → confirmaciones idempotentes
+- GET `/payments/methods` → métodos habilitados por vendedor
+
+#### **Pedidos:**
+- GET `/orders` → pedidos del comprador
+- GET `/seller/orders` → pedidos del vendedor
+- PUT `/seller/orders/{id}/status` → cambiar estado del pedido
+- GET `/orders/{id}/tracking` → seguimiento de envío
+
+#### **Referidos:**
+- POST `/referrals` → crear link de referido
+- GET `/referrals` → links del vendedor
+- GET `/referrals/stats` → estadísticas de comisiones
+
+#### **Notificaciones:**
+- GET `/notifications` → notificaciones del usuario
+- PUT `/notifications/{id}/read` → marcar como leída
 
 ### 6) Políticas y seguridad
 - HTTPS (TLS 1.2+), CORS configurado

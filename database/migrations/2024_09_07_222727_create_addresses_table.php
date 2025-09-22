@@ -13,19 +13,29 @@ return new class extends Migration
     {
         Schema::create('addresses', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('profile_id')->constrained()->onDelete('cascade');
+            $table->foreignId('city_id')->constrained()->onDelete('cascade');
+            
+            // Dirección principal
             $table->string('street');
             $table->string('house_number');
-            $table->string('postal_code');
-            $table->decimal('latitude', 10, 7); // Almacena la latitud con 7 decimales de precisión
-            $table->decimal('longitude', 10, 7); // Almacena la longitud con 7 decimales de precisión
+            $table->string('address_line_2')->nullable(); // Segunda línea de dirección
+            
+            // Referencias importantes en Venezuela
+            $table->text('reference')->nullable(); // Referencias del lugar
+            
+            // Código postal (opcional en Venezuela)
+            $table->string('postal_code')->nullable();
+            
+            // Coordenadas (opcionales para MVP)
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+            
+            // Estado y configuración
             $table->enum('status', ['completeData', 'incompleteData', 'notverified'])->default('notverified');
+            $table->boolean('is_default')->default(false); // Dirección por defecto
+            
             $table->timestamps();
-
-            // Claves foráneas
-            $table->unsignedBigInteger('profile_id');
-            $table->foreign('profile_id')->references('id')->on('profiles')->onDelete('cascade');
-            $table->unsignedBigInteger('city_id');  // Relación con ciudades
-            $table->foreign('city_id')->references('id')->on('cities')->onDelete('cascade');
         });
     }
 

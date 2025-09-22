@@ -13,31 +13,28 @@ return new class extends Migration
     {
         Schema::create('documents', function (Blueprint $table) {
             $table->id();
-            $table->enum('type', ['ci', 'passport', 'rif', 'neighborhood_association'])->nullable();  // Ejemplo: tipo de documento (CI, Pasaporte, etc.)
-
-            $table->integer('number_ci')->nullable(); // Número del documento
-
-            $table->bigInteger('RECEIPT_N')->nullable(); // N° COMPROBANTE
-            $table->bigInteger('sky')->nullable(); // Número del documento
+            $table->foreignId('profile_id')->constrained()->onDelete('cascade');
+            
+            // Tipo de documento (simplificado para MVP)
+            $table->enum('type', ['ci', 'passport', 'rif'])->nullable();
+            
+            // Número del documento (más genérico)
+            $table->string('document_number')->nullable();
+            
+            // URLs de documentos
             $table->string('rif_url')->nullable(); // URL del RIF
-            $table->string('taxDomicile')->nullable(); // domicilio fiscal
-
-            $table->string('commune_register')->nullable(); // registro de la comuna
-            $table->string('community_rif')->nullable(); // RIF DE LA COMUNA
-
-
-            $table->string('front_image')->nullable(); // Ruta de la imagen del frente
+            $table->string('front_image')->nullable(); // Imagen del frente
+            $table->string('back_image')->nullable(); // Imagen del reverso
+            
+            // Fechas
             $table->date('issued_at')->nullable(); // Fecha de emisión
-            $table->date('expires_at')->nullable(); // Fecha de expiración (si aplica)
-
-            $table->boolean('approved')->default(false);// significa si el documento esta aprovado
-            $table->boolean('status')->default(false);//significa que si esta activo o desactivado este documento si esta activo se muestra si no. no se muestra.
+            $table->date('expires_at')->nullable(); // Fecha de expiración
+            
+            // Estado y verificación
+            $table->boolean('approved')->default(false); // Si el documento está aprobado
+            $table->timestamp('verified_at')->nullable(); // Cuándo se verificó
+            
             $table->timestamps();
-
-            // Clave foránea que referencia a la tabla profiles
-            $table->unsignedBigInteger('profile_id'); // Relación con profiles
-            $table->foreign('profile_id')->references('id')->on('profiles')->onDelete('cascade');
-
         });
     }
 

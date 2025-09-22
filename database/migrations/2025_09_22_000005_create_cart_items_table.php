@@ -11,14 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('order_items', function (Blueprint $table) {
+        Schema::create('cart_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')->constrained()->onDelete('cascade');
+            $table->foreignId('profile_id')->constrained()->onDelete('cascade');
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->unsignedInteger('quantity');
+            // Snapshot de precio y modalidad al momento de agregar al carrito
+            $table->enum('modality', ['retail', 'wholesale', 'preorder', 'referral', 'dropshipping'])->default('retail');
             $table->decimal('unit_price', 10, 2);
-            $table->decimal('subtotal', 10, 2); // quantity * unit_price
+            $table->decimal('subtotal', 10, 2);
             $table->timestamps();
+
+            $table->unique(['profile_id', 'product_id']);
         });
     }
 
@@ -27,6 +31,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('order_items');
+        Schema::dropIfExists('cart_items');
     }
 };
+
+

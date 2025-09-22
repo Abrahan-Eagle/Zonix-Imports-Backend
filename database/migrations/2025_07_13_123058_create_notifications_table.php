@@ -13,15 +13,21 @@ return new class extends Migration
     {
         Schema::create('notifications', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('profile_id');
+            $table->foreignId('profile_id')->constrained()->onDelete('cascade');
+            
+            // Contenido
             $table->string('title');
             $table->text('body');
             $table->string('type')->nullable();
-            $table->timestamp('read_at')->nullable();
+            
+            // Estado y prioridad
+            $table->boolean('is_read')->default(false); // Más claro que read_at
+            $table->enum('priority', ['low', 'medium', 'high'])->default('medium'); // Prioridad
+            
+            // Payload extra
             $table->json('data')->nullable();
+            
             $table->timestamps();
-
-            $table->foreign('profile_id')->references('id')->on('profiles')->onDelete('cascade');
         });
     }
 

@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('order_delivery', function (Blueprint $table) {
-            $table->string('status', 32)->change();
+        Schema::create('product_images', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('product_id')->constrained()->onDelete('cascade');
+            $table->string('url');
+            $table->unsignedSmallInteger('position')->default(0);
+            $table->timestamps();
         });
     }
 
@@ -21,8 +25,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('order_delivery', function (Blueprint $table) {
-            $table->string('status', 10)->change(); // Asumimos que antes era 10
-        });
+        Schema::dropIfExists('product_images');
     }
 };
+
+
