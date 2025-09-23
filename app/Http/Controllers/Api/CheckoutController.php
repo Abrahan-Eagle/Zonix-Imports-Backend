@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Events\OrderCreated;
 
 class CheckoutController extends Controller
 {
@@ -61,6 +62,9 @@ class CheckoutController extends Controller
 
             // Limpiar carrito del perfil
             CartItem::where('profile_id', $profile->id)->delete();
+
+            // Emitir evento de orden creada (Broadcast)
+            event(new OrderCreated($order));
 
             return response()->json([
                 'success' => true,
