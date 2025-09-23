@@ -14,17 +14,45 @@ class Notification extends Model
         'title',
         'body',
         'type',
-        'read_at',
+        'is_read',
+        'priority',
         'data',
     ];
 
     protected $casts = [
         'data' => 'array',
-        'read_at' => 'datetime',
+        'is_read' => 'boolean',
     ];
 
+    /**
+     * Relación con el perfil
+     */
     public function profile()
     {
         return $this->belongsTo(Profile::class);
+    }
+
+    /**
+     * Scope para notificaciones no leídas
+     */
+    public function scopeUnread($query)
+    {
+        return $query->where('is_read', false);
+    }
+
+    /**
+     * Scope para notificaciones leídas
+     */
+    public function scopeRead($query)
+    {
+        return $query->where('is_read', true);
+    }
+
+    /**
+     * Scope para notificaciones por prioridad
+     */
+    public function scopeByPriority($query, $priority)
+    {
+        return $query->where('priority', $priority);
     }
 }

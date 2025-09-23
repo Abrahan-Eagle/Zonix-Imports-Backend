@@ -103,7 +103,8 @@ class NotificationFactory extends Factory
             'title' => $title,
             'body' => $body,
             'type' => $type,
-            'read_at' => $this->faker->optional(0.3)->dateTimeBetween('-1 week', 'now'),
+            'is_read' => $this->faker->boolean(30),
+            'priority' => $this->faker->randomElement(['low', 'medium', 'high']),
             'data' => [
                 'order_id' => $type === 'order_status' || $type === 'payment_confirmation' ? $this->faker->numberBetween(1000, 9999) : null,
                 'restaurant_id' => $this->faker->optional()->numberBetween(1, 10),
@@ -120,7 +121,7 @@ class NotificationFactory extends Factory
     public function read(): static
     {
         return $this->state(fn (array $attributes) => [
-            'read_at' => $this->faker->dateTimeBetween('-1 week', 'now'),
+            'is_read' => true,
         ]);
     }
     
@@ -130,7 +131,7 @@ class NotificationFactory extends Factory
     public function unread(): static
     {
         return $this->state(fn (array $attributes) => [
-            'read_at' => null,
+            'is_read' => false,
         ]);
     }
     

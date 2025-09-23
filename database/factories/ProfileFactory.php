@@ -14,29 +14,46 @@ class ProfileFactory extends Factory
         return [
             'user_id' => User::factory(),
             'firstName' => $this->faker->firstName,
-            'middleName' => $this->faker->firstName,
             'lastName' => $this->faker->lastName,
-            'secondLastName' => $this->faker->lastName,
-            'photo_users' => $this->faker->imageUrl(),
-            'date_of_birth' => $this->faker->date(),
-            'maritalStatus' => $this->faker->randomElement(['married', 'divorced', 'single', 'widowed']),
-            'sex' => $this->faker->randomElement(['F', 'M', 'O']),
-            'status' => $this->faker->randomElement(['completeData', 'incompleteData', 'notverified']),
-            'phone' => $this->faker->phoneNumber,
-            'address' => $this->faker->address,
+            'role' => $this->faker->randomElement(['buyer', 'seller', 'admin']),
+            'is_verified' => $this->faker->boolean(60),
+            'rif' => $this->faker->optional(0.3)->regexify('V[0-9]{8}'),
+            'bank_account' => $this->faker->optional(0.2)->bankAccountNumber,
         ];
     }
 
-    // Estados adicionales para diferentes roles
-    public function commerce(): Factory
+    /**
+     * Estado para comprador
+     */
+    public function buyer(): Factory
     {
         return $this->state([
+            'role' => 'buyer',
+            'is_verified' => true,
         ]);
     }
 
-    public function delivery(): Factory
+    /**
+     * Estado para vendedor
+     */
+    public function seller(): Factory
     {
         return $this->state([
+            'role' => 'seller',
+            'is_verified' => $this->faker->boolean(80),
+            'rif' => $this->faker->regexify('V[0-9]{8}'),
+            'bank_account' => $this->faker->bankAccountNumber,
+        ]);
+    }
+
+    /**
+     * Estado para administrador
+     */
+    public function admin(): Factory
+    {
+        return $this->state([
+            'role' => 'admin',
+            'is_verified' => true,
         ]);
     }
 }

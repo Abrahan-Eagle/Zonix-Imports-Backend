@@ -10,23 +10,25 @@ class UserController extends Controller
 {
  public function index()
     {
-        return User::with('roles')->get();
+        return User::with('profile')->get();
     }
 
     public function show($id)
     {
-        return User::with('roles')->findOrFail($id);
+        return User::with('profile')->findOrFail($id);
     }
 
     public function updateRole(Request $request, $id)
     {
         $request->validate([
-            'role' => 'required|string|in:users,commerce,delivery,admin,delivery_company,delivery_agent',
+            'role' => 'required|string|in:buyer,seller,admin',
         ]);
 
         $user = User::findOrFail($id);
-        $user->role = $request->role;
-        $user->save();
+        if ($user->profile) {
+            $user->profile->role = $request->role;
+            $user->profile->save();
+        }
 
         return response()->json(['message' => 'Rol actualizado correctamente']);
     }

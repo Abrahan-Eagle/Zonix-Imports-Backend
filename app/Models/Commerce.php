@@ -12,15 +12,21 @@ class Commerce extends Model
     protected $fillable = [
         'profile_id',
         'business_name',
+        'business_type',
         'image',
-        'address',
         'phone',
+        'rif',
+        'bank_account',
+        'is_verified',
         'open',
+        'payment_methods',
         'schedule'
     ];
 
     protected $casts = [
+        'is_verified' => 'boolean',
         'open' => 'boolean',
+        'payment_methods' => 'array',
         'schedule' => 'array'
     ];
 
@@ -37,7 +43,7 @@ class Commerce extends Model
      */
     public function user()
     {
-        return $this->hasOneThrough(User::class, Profile::class);
+        return $this->hasOneThrough(User::class, Profile::class, 'id', 'id', 'profile_id', 'user_id');
     }
 
     /**
@@ -57,10 +63,10 @@ class Commerce extends Model
     }
 
     /**
-     * Relación con métodos de pago
+     * Relación con pagos
      */
-    public function paymentMethods()
+    public function payments()
     {
-        return $this->morphMany(PaymentMethod::class, 'payable');
+        return $this->hasManyThrough(Payment::class, Order::class, 'commerce_id', 'order_id');
     }
 }

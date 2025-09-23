@@ -31,13 +31,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'google_id',        // ID único proporcionado por Google
-        'given_name',       // Nombre de pila
-        'family_name',      // Apellido
-        'profile_pic',      // URL de la imagen de perfil de Google
-        'AccessToken',
-        'role',  // Rol del usuario (admin, cliente, etc.
-        'completed_onboarding'
+        'email_verified_at',
+        'remember_token'
     ];
 
     /**
@@ -60,23 +55,11 @@ class User extends Authenticatable
     ];
 
     /**
-     * Relación para obtener los roles del usuario.
-     * Si quieres manejar varios roles por usuario, puedes usar una tabla pivot.
-     */
-    public function roles()
-    {
-        return $this->belongsToMany(Role::class, 'user_roles');
-    }
-
-    /**
-     * Verificar si el usuario tiene un rol específico
+     * Verificar si el usuario tiene un rol específico a través del perfil
      */
     public function hasRole($role)
     {
-        if (is_string($role)) {
-            return $this->role === $role || $this->roles->contains('name', $role);
-        }
-        return $this->roles->contains($role);
+        return $this->profile && $this->profile->role === $role;
     }
 
     /**
@@ -97,15 +80,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Obtener todos los roles asociados al usuario
+     * Obtener el rol del usuario a través del perfil
      */
-    public function getAllRoles()
+    public function getRole()
     {
-        $roles = collect([$this->role]);
-        if ($this->roles->isNotEmpty()) {
-            $roles = $roles->merge($this->roles->pluck('name'));
-        }
-        return $roles->unique()->values();
+        return $this->profile ? $this->profile->role : 'buyer';
     }
 
     // Relación con Profile
@@ -114,58 +93,59 @@ class User extends Authenticatable
         return $this->hasOne(Profile::class);
     }
 
+    /**
+     * Relación con comercio a través del perfil (1:1)
+     */
     public function commerce()
     {
-        return $this->hasOne(Commerce::class);
+        return $this->hasOneThrough(Commerce::class, Profile::class);
     }
 
-    public function deliveryCompany()
-    {
-        return $this->hasOne(DeliveryCompany::class);
-    }
-
-    public function deliveryAgent()
-    {
-        return $this->hasOne(DeliveryAgent::class);
-    }
-
+    /**
+     * Relación con órdenes como comprador a través del perfil
+     */
     public function orders()
     {
-        return $this->hasMany(Order::class);
-    }
-
-    public function postLikes()
-    {
-        return $this->hasMany(PostLike::class);
+        return $this->hasManyThrough(Order::class, Profile::class);
     }
 
     /**
-     * Relación con órdenes como comprador
+     * Relación con teléfonos a través del perfil
      */
-    public function buyerOrders()
+    public function phones()
     {
-        return $this->hasMany(Order::class, 'buyer_id');
+        return $this->hasManyThrough(Phone::class, Profile::class);
     }
 
     /**
-     * Relación con órdenes como repartidor
+     * Relación con direcciones a través del perfil
      */
-    public function deliveryOrders()
+    public function addresses()
     {
-        return $this->hasManyThrough(
-            Order::class,
-            DeliveryAgent::class,
-            'profile_id', // Clave foránea en delivery_agents
-            'id', // Clave foránea en orders
-            'id', // Clave local en users
-            'id' // Clave local en delivery_agents
-        )->whereHas('orderDelivery', function($query) {
-            $query->where('agent_id', $this->profile->deliveryAgent->id ?? 0);
-        });
+        return $this->hasManyThrough(Address::class, Profile::class);
     }
 
-    public function paymentMethods()
+    /**
+     * Relación con documentos a través del perfil
+     */
+    public function documents()
     {
-        return $this->morphMany(PaymentMethod::class, 'payable');
+        return $this->hasManyThrough(Document::class, Profile::class);
+    }
+
+    /**
+     * Relación con notificaciones a través del perfil
+     */
+    public function notifications()
+    {
+        return $this->hasManyThrough(Notification::class, Profile::class);
+    }
+
+    /**
+     * Relación con carrito a través del perfil
+     */
+    public function cartItems()
+    {
+        return $this->hasManyThrough(CartItem::class, Profile::class);
     }
 }

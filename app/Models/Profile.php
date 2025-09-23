@@ -16,8 +16,7 @@ class Profile extends Model
 
     protected $table = 'profiles';
 
-    // Definir los campos que se pueden llenar de forma masiva
-       protected $fillable = [
+    protected $fillable = [
         'user_id',
         'firstName',
         'middleName',
@@ -25,69 +24,96 @@ class Profile extends Model
         'secondLastName',
         'photo_users',
         'date_of_birth',
-        'maritalStatus',
-        'sex',
+        'role',
         'status',
+        'is_verified',
         'phone',
-        'address',
-        'business_name',
-        'business_type',
-        'tax_id',
-        'vehicle_type',
-        'license_number'
+        'rif',
+        'bank_account'
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
-        'status' => 'string',
+        'is_verified' => 'boolean',
     ];
 
-
- public function user()
+    /**
+     * Relación con el usuario (1:1)
+     */
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // Relaciones con otros modelos
+    /**
+     * Relación con comercio (1:1)
+     */
     public function commerce()
     {
         return $this->hasOne(Commerce::class);
     }
 
-    public function deliveryCompany()
-    {
-        return $this->hasOne(DeliveryCompany::class);
-    }
-
-    public function deliveryAgent()
-    {
-        return $this->hasOne(DeliveryAgent::class);
-    }
-
+    /**
+     * Relación con órdenes como comprador
+     */
     public function orders()
     {
         return $this->hasMany(Order::class);
     }
 
-    public function postLikes()
+    /**
+     * Relación con direcciones
+     */
+    public function addresses()
     {
-        return $this->hasMany(PostLike::class);
-    }
-
-    public function reviews()
-    {
-        return $this->hasMany(Review::class);
-    }
-
-
-
-
-
-// Relación uno a muchos con el modelo Address
-    public function addresses() {
         return $this->hasMany(Address::class);
     }
 
+    /**
+     * Relación con teléfonos
+     */
+    public function phones()
+    {
+        return $this->hasMany(Phone::class);
+    }
 
+    /**
+     * Relación con documentos
+     */
+    public function documents()
+    {
+        return $this->hasMany(Document::class);
+    }
 
+    /**
+     * Relación con notificaciones
+     */
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    /**
+     * Relación con carrito
+     */
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
+    }
+
+    /**
+     * Relación con referidos como referidor
+     */
+    public function referrals()
+    {
+        return $this->hasMany(Referral::class, 'referrer_profile_id');
+    }
+
+    /**
+     * Relación con movimientos de inventario
+     */
+    public function inventoryMovements()
+    {
+        return $this->hasManyThrough(InventoryMovement::class, User::class);
+    }
 }

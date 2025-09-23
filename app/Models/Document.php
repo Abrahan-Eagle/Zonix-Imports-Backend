@@ -17,18 +17,14 @@ class Document extends Model
     protected $fillable = [
         'profile_id',
         'type',
-        'number_ci',
-        'RECEIPT_N',
-        'sky',
+        'document_number',
         'rif_url',
-        'taxDomicile',
-        'commune_register',
-        'community_rif',
         'front_image',
+        'back_image',
         'issued_at',
         'expires_at',
         'approved',
-        'status',
+        'verified_at'
     ];
 
     /**
@@ -38,7 +34,7 @@ class Document extends Model
         'issued_at' => 'datetime',
         'expires_at' => 'datetime',
         'approved' => 'boolean',
-        'status' => 'boolean',
+        'verified_at' => 'datetime',
     ];
 
     /**

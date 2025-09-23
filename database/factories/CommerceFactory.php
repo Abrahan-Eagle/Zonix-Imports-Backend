@@ -18,26 +18,25 @@ class CommerceFactory extends Factory
      */
     public function definition(): array
     {
-        $restaurantImages = [
+        $businessImages = [
             'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&h=300&fit=crop',
             'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=500&h=300&fit=crop',
             'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=500&h=300&fit=crop',
             'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=500&h=300&fit=crop',
             'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=500&h=300&fit=crop',
-            'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&h=300&fit=crop',
-            'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=500&h=300&fit=crop',
-            'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&h=300&fit=crop',
-            'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=500&h=300&fit=crop',
-            'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=500&h=300&fit=crop',
         ];
 
         return [
-            'profile_id' => Profile::factory(),
+            'profile_id' => Profile::factory()->seller(),
             'business_name' => $this->faker->company,
-            'image' => $this->faker->randomElement($restaurantImages),
-            'address' => $this->faker->address,
+            'business_type' => $this->faker->randomElement(['retail', 'wholesale', 'service', 'manufacturing']),
+            'image' => $this->faker->randomElement($businessImages),
             'phone' => $this->faker->phoneNumber,
-            'open' => $this->faker->boolean(70),
+            'rif' => $this->faker->unique()->regexify('V[0-9]{8}'),
+            'bank_account' => $this->faker->bankAccountNumber,
+            'is_verified' => $this->faker->boolean(70),
+            'open' => $this->faker->boolean(80),
+            'payment_methods' => $this->faker->randomElements(['stripe', 'paypal', 'binance', 'pago_movil', 'zelle'], $this->faker->numberBetween(1, 3)),
             'schedule' => [
                 'monday' => ['open' => '08:00', 'close' => '18:00'],
                 'tuesday' => ['open' => '08:00', 'close' => '18:00'],

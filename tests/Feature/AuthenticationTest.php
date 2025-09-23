@@ -6,8 +6,6 @@ use Tests\TestCase;
 use App\Models\User;
 use App\Models\Profile;
 use App\Models\Commerce;
-use App\Models\DeliveryCompany;
-use App\Models\DeliveryAgent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Hash;
@@ -23,7 +21,6 @@ class AuthenticationTest extends TestCase
         $userData = [
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'google_id' => 'google_123456',
             'role' => 'users',
         ];
 
@@ -45,9 +42,7 @@ class AuthenticationTest extends TestCase
                  ]);
 
         $this->assertDatabaseHas('users', [
-            'email' => 'test@example.com',
-            'google_id' => 'google_123456',
-            'role' => 'users'
+            'email' => 'test@example.com'
         ]);
     }
 
@@ -175,158 +170,9 @@ class AuthenticationTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function user_can_create_commerce_profile()
-    {
-        $user = User::factory()->create(['role' => 'commerce']);
-        Sanctum::actingAs($user);
 
-        $commerceData = [
-            'user_id' => $user->id,
-            'firstName' => 'John',
-            'lastName' => 'Doe',
-            'date_of_birth' => '1990-01-01',
-            'maritalStatus' => 'single',
-            'sex' => 'M',
-            'business_name' => 'Test Restaurant',
-            'description' => 'Test restaurant description',
-            'address' => 'Test Address',
-            'phone' => '1234567890',
-            'email' => 'restaurant@example.com',
-            'mobile_payment_bank' => 'Test Bank',
-            'mobile_payment_id' => '123456789',
-            'mobile_payment_phone' => '1234567890',
-            'is_open' => true,
-        ];
 
-        $response = $this->postJson('/api/profiles/commerce', $commerceData);
 
-        $response->assertStatus(201)
-                 ->assertJsonStructure([
-                     'success',
-                     'data' => [
-                         'id',
-                         'business_name',
-                         'description',
-                         'address',
-                         'phone',
-                         'mobile_payment_bank',
-                         'mobile_payment_id',
-                         'mobile_payment_phone',
-                         'open'
-                     ]
-                 ]);
-
-        $this->assertDatabaseHas('commerces', [
-            'business_name' => 'Test Restaurant',
-            'phone' => '1234567890'
-        ]);
-    }
-
-    /** @test */
-    public function user_can_create_delivery_company_profile()
-    {
-        $user = User::factory()->create(['role' => 'users']);
-        Sanctum::actingAs($user);
-
-        $deliveryData = [
-            'user_id' => $user->id,
-            'firstName' => 'John',
-            'lastName' => 'Doe',
-            'date_of_birth' => '1990-01-01',
-            'maritalStatus' => 'single',
-            'sex' => 'M',
-            'company_name' => 'Test Delivery Company',
-            'address' => 'Test Address',
-            'phone' => '1234567890',
-        ];
-
-        $response = $this->postJson('/api/profiles/delivery-company', $deliveryData);
-
-        $response->assertStatus(201)
-                 ->assertJsonStructure([
-                     'success',
-                     'data' => [
-                         'profile',
-                         'delivery_company'
-                     ]
-                 ]);
-
-        $this->assertDatabaseHas('delivery_companies', [
-            'name' => 'Test Delivery Company',
-        ]);
-    }
-
-    /** @test */
-    public function user_can_create_delivery_agent_profile()
-    {
-        $user = User::factory()->create(['role' => 'delivery']);
-        Sanctum::actingAs($user);
-
-        $deliveryAgentData = [
-            'user_id' => $user->id,
-            'firstName' => 'John',
-            'lastName' => 'Doe',
-            'date_of_birth' => '1990-01-01',
-            'maritalStatus' => 'single',
-            'sex' => 'M',
-            'vehicle_type' => 'motorcycle',
-            'phone' => '1234567890',
-        ];
-
-        $response = $this->postJson('/api/profiles/delivery-agent', $deliveryAgentData);
-
-        $response->assertStatus(201)
-                 ->assertJsonStructure([
-                     'success',
-                     'data' => [
-                         'profile',
-                         'delivery_agent'
-                     ]
-                 ]);
-
-        $this->assertDatabaseHas('delivery_agents', [
-            'vehicle_type' => 'motorcycle',
-            'phone' => '1234567890'
-        ]);
-    }
-
-    /** @test */
-    public function user_can_create_delivery_agent_profile_with_company()
-    {
-        $user = User::factory()->create(['role' => 'delivery']);
-        $company = \App\Models\DeliveryCompany::factory()->create();
-        Sanctum::actingAs($user);
-
-        $deliveryAgentData = [
-            'user_id' => $user->id,
-            'firstName' => 'John',
-            'lastName' => 'Doe',
-            'date_of_birth' => '1990-01-01',
-            'maritalStatus' => 'single',
-            'sex' => 'M',
-            'vehicle_type' => 'motorcycle',
-            'phone' => '1234567890',
-            'company_id' => $company->id,
-        ];
-
-        $response = $this->postJson('/api/profiles/delivery-agent', $deliveryAgentData);
-
-        $response->assertStatus(201)
-                 ->assertJsonStructure([
-                     'success',
-                     'data' => [
-                         'profile',
-                         'delivery_agent'
-                     ]
-                 ]);
-
-        $this->assertDatabaseHas('delivery_agents', [
-            'vehicle_type' => 'motorcycle',
-            'phone' => '1234567890',
-            'company_id' => $company->id
-        ]);
-    }
 
     /** @test */
     public function user_cannot_access_protected_route_without_token()
@@ -373,20 +219,6 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
-    public function delivery_can_access_delivery_route()
-    {
-        $delivery = User::factory()->create(['role' => 'delivery']);
-        Sanctum::actingAs($delivery);
-
-        // Crear perfil de delivery agent
-        $profile = Profile::factory()->create(['user_id' => $delivery->id]);
-        \App\Models\DeliveryAgent::factory()->create(['profile_id' => $profile->id]);
-
-        $response = $this->getJson('/api/delivery/orders');
-
-        $response->assertStatus(200);
-    }
 
     /** @test */
     public function token_expires_after_configured_time()

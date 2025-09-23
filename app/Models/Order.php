@@ -12,22 +12,27 @@ class Order extends Model
     protected $fillable = [
         'profile_id',
         'commerce_id',
+        'modality',
         'delivery_type',
         'status',
+        'subtotal',
+        'discount_total',
+        'shipping_total',
         'total',
+        'shipping_address_id',
+        'billing_address_id',
+        'tracking_number',
+        'estimated_delivery',
         'receipt_url',
-        'notes',
-        'payment_proof',
-        'payment_method',
-        'reference_number',
-        'payment_validated_at',
-        'cancellation_reason',
-        'delivery_address'
+        'notes'
     ];
 
     protected $casts = [
+        'subtotal' => 'decimal:2',
+        'discount_total' => 'decimal:2',
+        'shipping_total' => 'decimal:2',
         'total' => 'decimal:2',
-        'payment_validated_at' => 'datetime'
+        'estimated_delivery' => 'datetime'
     ];
 
     /**
@@ -43,7 +48,7 @@ class Order extends Model
      */
     public function user()
     {
-        return $this->hasOneThrough(User::class, Profile::class);
+        return $this->hasOneThrough(User::class, Profile::class, 'id', 'id', 'profile_id', 'user_id');
     }
 
     /**
@@ -60,7 +65,7 @@ class Order extends Model
     public function products()
     {
         return $this->belongsToMany(Product::class, 'order_items')
-                    ->withPivot('quantity', 'unit_price')
+                    ->withPivot('quantity', 'unit_price', 'subtotal')
                     ->withTimestamps();
     }
 
@@ -73,20 +78,26 @@ class Order extends Model
     }
 
     /**
-     * Relación con la entrega de la orden
+     * Relación con pagos
      */
-    public function orderDelivery()
+    public function payments()
     {
-        return $this->hasOne(OrderDelivery::class);
+        return $this->hasMany(Payment::class);
     }
 
-    public function delivery()
+    /**
+     * Relación con dirección de envío
+     */
+    public function shippingAddress()
     {
-        return $this->hasOne(\App\Models\OrderDelivery::class);
+        return $this->belongsTo(Address::class, 'shipping_address_id');
     }
 
-    public function items()
+    /**
+     * Relación con dirección de facturación
+     */
+    public function billingAddress()
     {
-        return $this->hasMany(\App\Models\OrderItem::class);
+        return $this->belongsTo(Address::class, 'billing_address_id');
     }
 }

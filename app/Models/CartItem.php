@@ -5,14 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class OrderItem extends Model
+class CartItem extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'order_id',
+        'profile_id',
         'product_id',
         'quantity',
+        'modality',
         'unit_price',
         'subtotal'
     ];
@@ -20,15 +21,15 @@ class OrderItem extends Model
     protected $casts = [
         'quantity' => 'integer',
         'unit_price' => 'decimal:2',
-        'subtotal' => 'decimal:2'
+        'subtotal' => 'decimal:2',
     ];
 
     /**
-     * Relación con la orden
+     * Relación con el perfil
      */
-    public function order()
+    public function profile()
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(Profile::class);
     }
 
     /**
@@ -37,5 +38,17 @@ class OrderItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * Calcular subtotal automáticamente
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($cartItem) {
+            $cartItem->subtotal = $cartItem->quantity * $cartItem->unit_price;
+        });
     }
 }
