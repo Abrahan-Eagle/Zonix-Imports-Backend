@@ -28,8 +28,9 @@ echo "Agregar al carrito:" && curl -s -H "Authorization: Bearer $TOKEN" -H "Cont
   -d '{"product_id":'"$PROD"',"quantity":2}' -o /tmp/cart.json -w "%{http_code}\n" \
   "$BASE_URL/api/buyer/cart/add"
 
+CID=$(php scripts/get-commerce-id.php)
 echo "Checkout:" && curl -s -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"commerce_id":1,"products":[{"product_id":'"$PROD"',"quantity":2,"unit_price":10}],"delivery_type":"pickup","total":20}' \
+  -d '{"commerce_id":'"$CID"',"products":[{"product_id":'"$PROD"',"quantity":2,"unit_price":10}],"delivery_type":"pickup","total":20}' \
   -o /tmp/checkout.json -w "%{http_code}\n" \
   "$BASE_URL/api/checkout"
 ORDER=$(php -r '$r=json_decode(file_get_contents("/tmp/checkout.json"),true); echo $r["order"]["id"]??$r["id"]??"";')
