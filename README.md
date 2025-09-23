@@ -18,9 +18,16 @@ API REST para el MVP de e‑commerce multi‑modal en Venezuela (detal, mayor, p
 - Validación de operadoras (`operator_codes`) y bancos (`banks`) para pagos locales.
 
 #### **Roles y Verificación:**
-- **Comprador (buyer)**: Por defecto, puede comprar.
-- **Vendedor (seller)**: Requiere RIF, banco, documentos verificados; puede publicar productos.
-- **Admin**: Gestiona usuarios, pedidos, disputas, productos.
+- **Visitante (guest)**: No autenticado; puede explorar el catálogo público, no puede comprar.
+- **Comprador (buyer)**: Rol por defecto al autenticarse; puede comprar.
+- **Vendedor (seller)**: Requiere RIF, banco, documentos verificados; puede publicar productos y también comprar (mismo perfil).
+- **Admin**: Sólo gestión (usuarios, pedidos, disputas, productos).
+
+Notas de autorización (MVP):
+- El catálogo es público (guests pueden ver, no comprar).
+- Rutas de compra (carrito/checkout/pedidos) permiten buyer y seller.
+- Rutas de vendedor requieren seller verificado.
+- Sin policies/middlewares personalizados adicionales por ahora (se controlará a nivel de controlador donde aplique).
 
 ### 1) Requisitos
 - PHP 8.2+
@@ -106,6 +113,106 @@ API REST para el MVP de e‑commerce multi‑modal en Venezuela (detal, mayor, p
 
 #### **Infraestructura Laravel:**
 - `cache`, `jobs`, `password_reset_tokens` - Tablas del framework
+
+#### 4.1) Acceso por rol y uso de tablas (MVP)
+
+- Rol efectivo único en `users.role` (`buyer` por defecto si está vacío). `profiles` mantiene relación 1:1 con `users` para datos extendidos. El resto de las tablas de negocio referencian `profiles.id` (no `users.id`). Excepción: `personal_access_tokens` (Sanctum) y autenticación.
+
+- Guest (no autenticado)
+  - Lectura: `products`, `product_images`, `categories`, `commerces` (abiertos), opcional `referrals` para mostrar landing.
+  - Escritura: ninguna.
+
+- Buyer (autenticado con intención de compra)
+  - Identidad/contacto: `profiles` (1:1), `phones`, `addresses`, `documents`.
+  - Compra: `cart_items`, `orders`, `order_items`, `payments`.
+  - Notificaciones: `notifications`.
+  - Soporte/maestros (solo lectura): `banks`, `operator_codes`, `countries`, `states`, `cities`, `categories`, `commerces`.
+
+- Seller (vendedor; también puede comprar)
+  - Identidad/negocio: `profiles` (1:1), `commerces` (1:1 con `profiles`), `documents` (verificación), `banks` (referencia para pagos).
+  - Catálogo/inventario: `products`, `product_images`, `inventory_movements`, `referrals`.
+  - Pedidos/pagos: `orders` (como vendedor mediante `commerce_id`), `order_items`, `payments`.
+  - Notificaciones: `notifications`.
+
+- Admin
+  - Lectura/escritura sobre todas las anteriores para gestión y auditoría, sin cambiar autenticación.
+
+Notas de modelado claves:
+- Todas las relaciones de negocio deben colgar de `profiles` (campo `profile_id`) en lugar de `user_id`, excepto las propias del sistema de auth.
+- `commerces` es 1:1 con `profiles` del seller.
+- `orders` enlaza a `profiles` (comprador) y a `commerces` (vendedor).
+- `payments` enlaza a `orders`; los webhooks son idempotentes vía `processed_webhook_events`.
+
+#### 4.2) Diagrama ER (tablas clave)
+
+```mermaid
+erDiagram
+  users ||--|| profiles : "1:1"
+  profiles ||--|| commerces : "1:1 (seller)"
+  profiles ||--o{ phones : has
+  profiles ||--o{ addresses : has
+  profiles ||--o{ documents : has
+  profiles ||--o{ notifications : has
+  profiles ||--o{ cart_items : has
+  profiles ||--o{ orders : places
+
+  commerces ||--o{ products : owns
+  commerces ||--o{ orders : receives
+
+  categories ||--o{ products : categorizes
+  products ||--o{ product_images : has
+  products ||--o{ inventory_movements : tracks
+  products ||--o{ referrals : promotes
+
+  orders ||--o{ order_items : contains
+  orders ||--o{ payments : paid_by
+  orders }o--|| addresses : "shipping_address_id"
+  orders }o--|| addresses : "billing_address_id"
+```
+
+Imagen: docs/diagrams/er.svg
+
+#### 4.3) Secuencias (Buyer y Seller)
+
+Compra (buyer):
+```mermaid
+sequenceDiagram
+  autonumber
+  participant G as Guest/Buyer
+  participant API as API
+  participant C as Commerce
+  participant PM as Payment Provider
+
+  G->>API: GET /products (catálogo)
+  G-->>API: (opcional) login → token Sanctum
+  G->>API: POST /buyer/cart/add
+  G->>API: POST /checkout (orders, order_items)
+  API->>C: notificación de nuevo pedido
+  G->>API: POST /payments/{provider}
+  API->>PM: crear intento de pago
+  PM-->>API: webhook /webhooks/{provider} (succeeded)
+  API->>API: registrar payment & marcar order paid
+  API-->>G: confirmación
+```
+Imagen: docs/diagrams/seq-buyer.svg
+
+Publicación y venta (seller):
+```mermaid
+sequenceDiagram
+  autonumber
+  participant S as Seller
+  participant API as API
+  participant B as Buyer
+
+  S->>API: POST /products (crear)
+  S->>API: POST /products/{id}/images
+  B->>API: GET /products (lista)
+  B->>API: POST /checkout (crea order)
+  API-->>S: notificación de pedido
+  S->>API: PUT /seller/orders/{id}/status (preparing/on_way)
+  API-->>B: notificaciones de estado
+```
+Imagen: docs/diagrams/seq-seller.svg
 
 ### 5) Endpoints API (mínimos)
 Prefijo `/api`.

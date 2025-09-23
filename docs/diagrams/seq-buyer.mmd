@@ -1,0 +1,18 @@
+sequenceDiagram
+  autonumber
+  participant G as Guest/Buyer
+  participant API as API
+  participant C as Commerce
+  participant PM as Payment Provider
+
+  G->>API: GET /products (catálogo)
+  G-->>API: (opcional) login → token Sanctum
+  G->>API: POST /buyer/cart/add
+  G->>API: POST /checkout (orders, order_items)
+  API->>C: notificación de nuevo pedido
+  G->>API: POST /payments/{provider}
+  API->>PM: crear intento de pago
+  PM-->>API: webhook /webhooks/{provider} (succeeded)
+  API->>API: registrar payment & marcar order paid
+  API-->>G: confirmación
+

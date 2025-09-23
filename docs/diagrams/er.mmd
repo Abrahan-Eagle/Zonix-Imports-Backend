@@ -1,0 +1,23 @@
+erDiagram
+  users ||--|| profiles : "1:1"
+  profiles ||--|| commerces : "1:1 (seller)"
+  profiles ||--o{ phones : has
+  profiles ||--o{ addresses : has
+  profiles ||--o{ documents : has
+  profiles ||--o{ notifications : has
+  profiles ||--o{ cart_items : has
+  profiles ||--o{ orders : places
+
+  commerces ||--o{ products : owns
+  commerces ||--o{ orders : receives
+
+  categories ||--o{ products : categorizes
+  products ||--o{ product_images : has
+  products ||--o{ inventory_movements : tracks
+  products ||--o{ referrals : promotes
+
+  orders ||--o{ order_items : contains
+  orders ||--o{ payments : paid_by
+  orders }o--|| addresses : "shipping_address_id"
+  orders }o--|| addresses : "billing_address_id"
+

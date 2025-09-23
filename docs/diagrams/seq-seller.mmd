@@ -1,0 +1,14 @@
+sequenceDiagram
+  autonumber
+  participant S as Seller
+  participant API as API
+  participant B as Buyer
+
+  S->>API: POST /products (crear)
+  S->>API: POST /products/{id}/images
+  B->>API: GET /products (lista)
+  B->>API: POST /checkout (crea order)
+  API-->>S: notificación de pedido
+  S->>API: PUT /seller/orders/{id}/status (preparing/on_way)
+  API-->>B: notificaciones de estado
+

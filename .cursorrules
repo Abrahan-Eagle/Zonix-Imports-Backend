@@ -8,9 +8,10 @@ rules:
       Pagos descentralizados por vendedor: Stripe, PayPal, Pago Móvil, Zelle, Binance Pay/USDT.
 
       Roles principales:
-      - Comprador (por defecto)
-      - Vendedor (publica productos, inventario, pedidos, referidos, dropshipping)
-      - Administrador (usuarios, pedidos, disputas, productos)
+      - Visitante (guest): catálogo público, no compra
+      - Comprador (buyer, por defecto al autenticarse)
+      - Vendedor (seller): publica productos, inventario, pedidos, referidos, dropshipping; también puede comprar
+      - Administrador (admin): usuarios, pedidos, disputas, productos
 
       Alcance Backend (MVP):
       - Laravel 10 + PHP 8.2 + MySQL 8
@@ -19,6 +20,7 @@ rules:
       - Pagos via API (Stripe/PayPal/Binance) + manual (Pago Móvil/Zelle)
       - Notificaciones (correo e internas)
       - Panel Admin mínimo
+      - Rol efectivo único en `users.role`; `profiles` es 1:1 y extiende datos. Tablas de negocio referencian `profiles.id`.
 
   - type: coding
     value: |
@@ -32,7 +34,7 @@ rules:
         - Controllers delgados; lógica en `Services` y `Actions`
         - Validación con `FormRequest`; respuestas JSON consistentes
         - Autenticación: Sanctum (SPA/API) + Google OAuth2 para login
-        - Policies/Middleware para roles y permisos
+      - Policies/Middleware: no agregar personalizados por ahora (control en controladores si aplica)
         - Rutas API bajo prefijo `/api` y versionado si aplica
         - Webhooks idempotentes (firma + replay protection)
         - Errores: códigos HTTP adecuados; no exponer trazas en producción
@@ -64,8 +66,8 @@ rules:
       Tablas principales del MVP:
       
       **Autenticación y Usuarios:**
-      - users (id, name, email, email_verified_at, password, remember_token, created_at, updated_at)
-      - profiles (id, user_id, firstName, lastName, role, status, is_verified, phone, rif, bank_account, created_at, updated_at)
+      - users (id, name, email, email_verified_at, password, role, remember_token, created_at, updated_at)
+      - profiles (id, user_id, firstName, lastName, is_verified, rif, bank_account, created_at, updated_at)
       - personal_access_tokens (id, tokenable_type, tokenable_id, name, token, abilities, last_used_at, expires_at, created_at, updated_at)
       
       **E-commerce Core:**
@@ -90,11 +92,66 @@ rules:
       
       **Contacto y Documentación:**
       - phones (id, profile_id, operator_code, country_code, number, is_primary, is_active, created_at, updated_at)
+      
+      Reglas de modelado por rol (MVP):
+      - Guest: solo lectura de catálogo (`products`, `product_images`, `categories`, `commerces`).
+      - Buyer: usa `profiles`, `phones`, `addresses`, `documents`, `cart_items`, `orders`, `order_items`, `payments`, `notifications`; lectura de `banks`, `operator_codes`, `countries/states/cities`.
+      - Seller: además de Buyer, gestiona `commerces` (1:1 con profile), `products`, `product_images`, `inventory_movements`, `referrals`, y ve `orders` por `commerce_id`.
+      - Admin: lectura/escritura de todas las anteriores.
       - operator_codes (id, code, name, created_at, updated_at)
       - documents (id, profile_id, type, document_number, rif_url, front_image, back_image, issued_at, expires_at, approved, verified_at, created_at, updated_at)
       - countries (id, sortname, name, phonecode, created_at, updated_at)
       - states (id, name, countries_id, created_at, updated_at)
       - cities (id, name, state_id, created_at, updated_at)
+
+      Diagramas (Mermaid):
+      
+      ER principal:
+      ```mermaid
+      erDiagram
+        users ||--|| profiles : "1:1"
+        profiles ||--|| commerces : "1:1 (seller)"
+        profiles ||--o{ phones : has
+        profiles ||--o{ addresses : has
+        profiles ||--o{ documents : has
+        profiles ||--o{ notifications : has
+        profiles ||--o{ cart_items : has
+        profiles ||--o{ orders : places
+
+        commerces ||--o{ products : owns
+        commerces ||--o{ orders : receives
+
+        categories ||--o{ products : categorizes
+        products ||--o{ product_images : has
+        products ||--o{ inventory_movements : tracks
+        products ||--o{ referrals : promotes
+
+        orders ||--o{ order_items : contains
+        orders ||--o{ payments : paid_by
+        orders }o--|| addresses : "shipping_address_id"
+        orders }o--|| addresses : "billing_address_id"
+      ```
+
+      Secuencias (buyer y seller):
+      ```mermaid
+      sequenceDiagram
+        autonumber
+        participant G as Guest/Buyer
+        participant API as API
+        participant C as Commerce
+        participant PM as Payment Provider
+
+        G->>API: GET /products (catálogo)
+        G-->>API: login → token Sanctum
+        G->>API: POST /buyer/cart/add
+        G->>API: POST /checkout
+        API->>C: notificar nuevo pedido
+        G->>API: POST /payments/{provider}
+        API->>PM: crear intento
+        PM-->>API: webhook (succeeded)
+        API->>API: registrar payment y actualizar order
+        API-->>G: confirmación
+      ```
 
   - type: api_endpoints
     value: |
@@ -136,6 +193,14 @@ rules:
       - GET /referrals/stats → estadísticas de comisiones
       
       **Notificaciones:**
+  - type: coding
+    value: |
+      Decisiones de roles (MVP):
+      - Único rol efectivo en `users.role` (buyer|seller|admin). Por defecto buyer.
+      - `profiles` es la extensión de `users` (1:1) y concentra relaciones de negocio.
+      - No agregar policies/middlewares personalizados por ahora; control en controladores si aplica.
+      - No agregar índices UNIQUE extra salvo necesidad crítica (decisión del usuario).
+
       - GET /notifications → notificaciones del usuario
       - PUT /notifications/{id}/read → marcar como leída
 
