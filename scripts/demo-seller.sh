@@ -10,7 +10,7 @@ if ! pgrep -f "php -S 127.0.0.1:8000 -t public" >/dev/null 2>&1; then
 fi
 
 # Generate seller token (set users.role = seller)
-TOKEN=$(php -r 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $kernel=$app->make(Illuminate\\Contracts\\Console\\Kernel::class); $kernel->bootstrap(); $u=App\\Models\\User::firstOrCreate(["email"=>"seller@test.com"],["name"=>"Test Seller","role"=>"seller"]); $u->role="seller"; $u->save(); if(!$u->profile){App\\Models\\Profile::firstOrCreate(["user_id"=>$u->id],["firstName"=>"Test","lastName"=>"Seller"]);} echo $u->createToken("cli")->plainTextToken;' )
+TOKEN=$(php scripts/gen-seller-token.php)
 
 if [ -z "$TOKEN" ]; then
   echo "No se pudo generar token seller" >&2
