@@ -25,10 +25,8 @@ class UserController extends Controller
         ]);
 
         $user = User::findOrFail($id);
-        if ($user->profile) {
-            $user->profile->role = $request->role;
-            $user->profile->save();
-        }
+        $user->role = $request->role;
+        $user->save();
 
         return response()->json(['message' => 'Rol actualizado correctamente']);
     }

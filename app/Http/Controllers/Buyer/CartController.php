@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Buyer;
 use App\Http\Controllers\Controller;
 use App\Services\CartService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\CartItem;
+use App\Models\Product;
 
 /**
  * Controlador para gestionar el carrito de compras del comprador.
@@ -41,8 +44,43 @@ class CartController extends Controller
             'product_id' => 'required|integer',
             'quantity' => 'required|integer|min:1',
         ]);
+
+        // Persistencia en DB (tabla cart_items) acorde al MVP
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $profile = $user->profile ?? \App\Models\Profile::firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'firstName' => 'Test',
+                'lastName' => 'User',
+            ]
+        );
+
+        $quantity = (int) $validated['quantity'];
+        $product = Product::find($validated['product_id']);
+        if ($product) {
+            $unitPrice = (float) $product->base_price;
+            // Unique (profile_id, product_id)
+            $cartItem = CartItem::updateOrCreate(
+                [
+                    'profile_id' => $profile->id,
+                    'product_id' => $product->id,
+                ],
+                [
+                    'quantity' => $quantity,
+                    'modality' => 'retail',
+                    'unit_price' => $unitPrice,
+                    'subtotal' => $unitPrice * $quantity,
+                ]
+            );
+        } else {
+            $cartItem = null; // Fallback a carrito en sesión sin persistencia
+        }
+
+        // Mantener compatibilidad con servicio de sesión si se usa en otras partes
         $cart = $this->cartService->addToCart($validated);
-        return response()->json(['message' => 'Producto agregado al carrito', 'cart' => $cart]);
+
+        return response()->json(['message' => 'Producto agregado al carrito', 'cart' => $cart, 'item' => $cartItem]);
     }
 
     /**

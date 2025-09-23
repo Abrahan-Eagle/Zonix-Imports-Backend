@@ -49,7 +49,7 @@ class OrderCreated implements ShouldBroadcast
             'order_id' => $this->order->id,
             'order_number' => $this->order->orderNumber ?? 'ORD-' . $this->order->id,
             'commerce_id' => $this->order->commerce_id,
-            'user_id' => $this->order->user_id,
+            'user_id' => optional($this->order->profile)->user_id,
             'status' => $this->order->status,
             'total' => $this->order->total,
             'created_at' => $this->order->created_at->toISOString(),

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Events\OrderCreated;
 
 /**
@@ -53,67 +54,32 @@ class OrderController extends Controller
             $validated = $request->validate([
                 'commerce_id' => 'required|exists:commerces,id',
                 'products' => 'required|array|min:1',
-                'products.*.id' => 'required|exists:products,id',
+                'products.*.product_id' => 'required|exists:products,id',
                 'products.*.quantity' => 'required|integer|min:1',
+                'products.*.unit_price' => 'required|numeric|min:0',
                 'delivery_type' => 'required|in:pickup,delivery',
                 'total' => 'required|numeric|min:0',
                 'notes' => 'nullable|string|max:500',
-                'delivery_address' => 'nullable|string|max:500',
             ]);
 
+            /** @var \App\Models\User $user */
             $user = Auth::user();
-            if (app()->environment('testing')) {
-                $user->role = 'users';
-                $user->save();
-                $profile = $user->profile;
-                if (!$profile) {
-                    $profile = \App\Models\Profile::firstOrCreate([
-                        'user_id' => $user->id
-                    ], [
+            // Asegurar perfil mínimo sin tocar columnas inexistentes
+            // No forzar cambio de rol aquí
+            // No forzar cambio de rol aquí
+            $profile = $user->profile;
+            if (!$profile) {
+                $profile = \App\Models\Profile::firstOrCreate(
+                    ['user_id' => $user->id],
+                    [
                         'firstName' => 'Test',
                         'lastName' => 'User',
-                        'date_of_birth' => now()->subYears(20)->toDateString(),
-                        'maritalStatus' => 'single',
-                        'sex' => 'M',
-                        'status' => 'completeData',
-                        'address' => 'Calle Falsa 123',
-                        'phone' => '+10000000000'
-                    ]);
-                } else {
-                    $profile->status = 'completeData';
-                    if (!$profile->address) $profile->address = 'Calle Falsa 123';
-                    if (!$profile->phone) $profile->phone = '+10000000000';
-                    $profile->save();
-                }
-            } else {
-                if (!Auth::check() || Auth::id() !== $user->id) {
-                    Auth::loginUsingId($user->id);
-                }
-                $user->role = 'users';
-                $user->save();
-                $profile = $user->profile;
-                if (!$profile) {
-                    $profile = \App\Models\Profile::firstOrCreate([
-                        'user_id' => $user->id
-                    ], [
-                        'firstName' => 'Test',
-                        'lastName' => 'User',
-                        'date_of_birth' => now()->subYears(20)->toDateString(),
-                        'maritalStatus' => 'single',
-                        'sex' => 'M',
-                        'status' => 'completeData',
-                        'address' => 'Calle Falsa 123',
-                        'phone' => '+10000000000'
-                    ]);
-                } else {
-                    $profile->status = 'completeData';
-                    if (!$profile->address) $profile->address = 'Calle Falsa 123';
-                    if (!$profile->phone) $profile->phone = '+10000000000';
-                    $profile->save();
-                }
+                        'role' => 'buyer',
+                    ]
+                );
             }
 
-            \Log::info('Intentando crear orden', [
+            Log::info('Intentando crear orden', [
                 'user_id' => $user ? $user->id : null,
                 'user_role' => $user ? $user->role : null,
                 'profile_id' => isset($profile) ? $profile->id : null,
@@ -129,15 +95,16 @@ class OrderController extends Controller
                 'status' => 'pending_payment',
                 'total' => $validated['total'],
                 'notes' => $validated['notes'] ?? null,
-                'delivery_address' => $validated['delivery_address'] ?? null,
             ]);
 
             // Agregar productos a la orden
             foreach ($validated['products'] as $product) {
-                $productModel = \App\Models\Product::find($product['id']);
-                $order->products()->attach($product['id'], [
-                    'quantity' => $product['quantity'],
-                    'unit_price' => $productModel->price
+                $quantity = (int) $product['quantity'];
+                $unit = (float) $product['unit_price'];
+                $order->products()->attach($product['product_id'], [
+                    'quantity' => $quantity,
+                    'unit_price' => $unit,
+                    'subtotal' => $quantity * $unit,
                 ]);
             }
 
@@ -153,14 +120,14 @@ class OrderController extends Controller
                 'data' => $orderWithProducts
             ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Error de validación al crear orden', ['errors' => $e->errors()]);
+            Log::error('Error de validación al crear orden', ['errors' => $e->errors()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Datos inválidos',
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            \Log::error('Error al crear orden', [
+            Log::error('Error al crear orden', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -214,7 +181,7 @@ class OrderController extends Controller
             $user = Auth::user();
             $profile = $user->profile;
             
-            \Log::info('ORDERS EN DB', [\App\Models\Order::all()->toArray()]);
+            Log::info('ORDERS EN DB', [\App\Models\Order::all()->toArray()]);
             $order = \App\Models\Order::where('profile_id', $profile->id)->where('id', $id)->first();
             if (!$order) {
                 // Fallback para tests: buscar solo por id
@@ -255,7 +222,7 @@ class OrderController extends Controller
                 'message' => 'Comprobante de pago subido exitosamente'
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error al subir comprobante de pago: ' . $e->getMessage());
+            Log::error('Error al subir comprobante de pago: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Error interno al subir comprobante'], 500);
         }
     }
@@ -300,7 +267,7 @@ class OrderController extends Controller
             // Notification::send($user, new OrderCancelled($order));
             return response()->json(['success' => true, 'message' => 'Orden cancelada exitosamente']);
         } catch (\Exception $e) {
-            \Log::error('Error al cancelar orden: ' . $e->getMessage());
+            Log::error('Error al cancelar orden: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Error interno al cancelar orden'], 500);
         }
     }

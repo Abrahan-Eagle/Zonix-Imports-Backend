@@ -3,10 +3,7 @@
 namespace App\Models;
 
 use App\Models\Commerce;
-use App\Models\DeliveryAgent;
-use App\Models\DeliveryCompany;
 use App\Models\Order;
-use App\Models\PostLike;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -59,7 +56,9 @@ class User extends Authenticatable
      */
     public function hasRole($role)
     {
-        return $this->profile && $this->profile->role === $role;
+        // Usar solo users.role
+        $effectiveRole = $this->attributes['role'] ?? null;
+        return $effectiveRole === $role;
     }
 
     /**
@@ -84,7 +83,8 @@ class User extends Authenticatable
      */
     public function getRole()
     {
-        return $this->profile ? $this->profile->role : 'buyer';
+        // Usar solo users.role; default 'buyer'
+        return !empty($this->attributes['role']) ? $this->attributes['role'] : 'buyer';
     }
 
     // Relación con Profile
