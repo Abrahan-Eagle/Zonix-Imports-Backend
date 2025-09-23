@@ -7,6 +7,7 @@ use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Commerce;
 
 class OrderController extends Controller
 {
@@ -16,12 +17,13 @@ class OrderController extends Controller
         if (!$user || !$user->profile) {
             return response()->json(['error' => 'No autorizado'], 401);
         }
-        $commerce = $user->commerce;
-        if (!$commerce) {
+        $profile = $user->profile;
+        $commerceId = $profile ? (optional($profile->commerce)->id ?? Commerce::where('profile_id', $profile->id)->value('id')) : null;
+        if (!$commerceId) {
             return response()->json(['error' => 'No autorizado'], 403);
         }
         $orders = Order::query()
-            ->where('commerce_id', $commerce->id)
+            ->where('commerce_id', $commerceId)
             ->latest()
             ->paginate(10);
         return response()->json($orders);
@@ -34,12 +36,13 @@ class OrderController extends Controller
         ]);
 
         $user = Auth::user();
-        if (!$user || !$user->profile || !$user->commerce) {
+        if (!$user || !$user->profile) {
             return response()->json(['error' => 'No autorizado'], 401);
         }
-
+        $profile = $user->profile;
+        $commerceId = $profile ? (optional($profile->commerce)->id ?? Commerce::where('profile_id', $profile->id)->value('id')) : null;
         $order = Order::findOrFail($id);
-        if ((int) $order->commerce_id !== (int) $user->commerce->id) {
+        if (!$commerceId || (int) $order->commerce_id !== (int) $commerceId) {
             return response()->json(['error' => 'No autorizado'], 403);
         }
 
