@@ -75,6 +75,7 @@ Notas de autorización (MVP):
 - Capas: `Controllers` delgados, `Services` para negocio, `FormRequest` para validación, `Policies/Middleware` para permisos.
 - Autenticación: Laravel Sanctum (tokens) + OAuth2 Google (login) [controlador/servicio dedicado].
 - Eventos/Listeners para: pedidos, pagos, notificaciones; webhooks idempotentes.
+  - Eventos activos (Broadcast): OrderCreated, OrderStatusChanged, PaymentValidated, NotificationCreated.
 - Logging sin datos sensibles; manejo de errores con códigos HTTP claros.
  - Estándar de respuesta de error: `{ message, errors?, code }`
 
@@ -228,6 +229,8 @@ Prefijo `/api`.
 - POST `/products/{id}/images` → subir imágenes
 - GET `/categories` → categorías disponibles
 
+Notas de validación (FormRequest productos): usar `base_price`, `modality` (retail|wholesale|preorder|referral|dropshipping), `category_id`, `stock`, `min_wholesale_quantity`, `wholesale_price`, `preorder_eta`, `origin_product_id`, `image`, `video_url`, `weight`, `dimensions`, `available`.
+
 #### **Carrito y Checkout:**
 - POST `/cart` → agregar producto al carrito
 - GET `/cart` → obtener carrito del usuario
@@ -236,8 +239,8 @@ Prefijo `/api`.
 - POST `/checkout` → crear pedido
 
 #### **Pagos:**
-- POST `/payments/stripe|paypal|binance` → intentos de pago API
 - POST `/payments/comprobante` → flujo manual Pago Móvil/Zelle
+- POST `/payments/stripe|paypal|binance` → intentos de pago API
 - POST `/webhooks/{provider}` → confirmaciones idempotentes
 - GET `/payments/methods` → métodos habilitados por vendedor
 
@@ -292,6 +295,7 @@ Prefijo `/api`.
 - Refrescar DB: `php artisan migrate:fresh --seed`
 - Limpiar caches: `php artisan optimize:clear`
  - Jobs/queues (si se usan): `php artisan queue:work`
+ - Demos E2E: `make demo-flow` (buyer) y `make demo-seller` (seller)
 
 ### 12) Roadmap (MVP)
 - S1: Infra + Auth

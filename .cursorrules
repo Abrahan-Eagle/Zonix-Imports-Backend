@@ -145,7 +145,7 @@ rules:
         G-->>API: login → token Sanctum
         G->>API: POST /buyer/cart/add
         G->>API: POST /checkout
-        API->>C: notificar nuevo pedido
+        API->>C: notificar nuevo pedido (OrderCreated)
         G->>API: POST /payments/{provider}
         API->>PM: crear intento
         PM-->>API: webhook (succeeded)
@@ -176,8 +176,8 @@ rules:
       - POST /checkout → crear pedido
       
       **Pagos:**
-      - POST /payments/stripe|paypal|binance → intentos de pago API
       - POST /payments/comprobante → flujo manual Pago Móvil/Zelle
+      - POST /payments/stripe|paypal|binance → intentos de pago API
       - POST /webhooks/{provider} → confirmaciones idempotentes
       - GET /payments/methods → métodos habilitados por vendedor
       
