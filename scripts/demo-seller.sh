@@ -6,8 +6,13 @@ BASE_URL="http://127.0.0.1:8000"
 # Ensure server is running
 if ! pgrep -f "php -S 127.0.0.1:8000 -t public" >/dev/null 2>&1; then
   (php -S 127.0.0.1:8000 -t public >/dev/null 2>&1 &)
-  sleep 1
 fi
+# Esperar a que el server responda
+for i in {1..10}; do
+  code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/ping" || true)
+  [ "$code" = "200" ] && break
+  sleep 1
+done
 
 # Generate seller token (set users.role = seller)
 TOKEN=$(php scripts/gen-seller-token.php)
