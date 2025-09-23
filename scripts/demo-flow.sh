@@ -19,10 +19,7 @@ fi
 
 echo "Ping:" && curl -s -o /dev/null -w "%{http_code}\n" "$BASE_URL/api/ping"
 
-echo "Listar productos (buyer):" && curl -s -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/buyer/products" -o /tmp/prods.json -w "%{http_code}\n"
-PROD=$(php -r '$r=json_decode(file_get_contents("/tmp/prods.json"),true); if(isset($r["data"][0]["id"])) echo $r["data"][0]["id"]; else if(isset($r[0]["id"])) echo $r[0]["id"];')
-if [ -z "$PROD" ]; then echo "No hay productos" >&2; exit 1; fi
-echo "Producto seleccionado: $PROD"
+echo "Asegurar producto del commerce del seller:" && PROD=$(php scripts/ensure-seller-product.php) && echo "Producto: $PROD"
 
 echo "Agregar al carrito:" && curl -s -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"product_id":'"$PROD"',"quantity":2}' -o /tmp/cart.json -w "%{http_code}\n" \

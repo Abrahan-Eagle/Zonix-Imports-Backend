@@ -17,8 +17,5 @@ class Bank extends Model
         'is_active',
     ];
 
-    public function paymentMethods()
-    {
-        return $this->hasMany(PaymentMethod::class);
-    }
+    // Uso MVP: tabla de bancos referenciada por Pago Móvil/Zelle (catálogo)
 } 

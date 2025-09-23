@@ -29,7 +29,7 @@ class PaymentGatewayController extends Controller
             'reference' => null,
         ]);
 
-        return response()->json(['success' => true, 'data' => $payment], 201);
+        return response()->json(['success' => true, 'payment' => $payment], 201);
     }
 
     public function comprobante(Request $request): JsonResponse
@@ -50,7 +50,7 @@ class PaymentGatewayController extends Controller
             'currency' => 'USD',
         ]);
 
-        return response()->json(['success' => true, 'data' => $payment], 201);
+        return response()->json(['success' => true, 'payment' => $payment], 201);
     }
 }
 

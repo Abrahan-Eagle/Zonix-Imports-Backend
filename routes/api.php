@@ -71,8 +71,9 @@ Route::prefix('referrals')->middleware('auth:sanctum')->group(function () {
 
 // Checkout y Pagos (MVP)
 Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('auth:sanctum');
-Route::post('/payments/{provider}', [PaymentGatewayController::class, 'apiPayment'])->middleware('auth:sanctum');
+// Específico primero para evitar colisión con el comodín
 Route::post('/payments/comprobante', [PaymentGatewayController::class, 'comprobante'])->middleware('auth:sanctum');
+Route::post('/payments/{provider}', [PaymentGatewayController::class, 'apiPayment'])->middleware('auth:sanctum');
 
 // Rutas mínimas para buyers (requeridas por tests)
 Route::middleware(['auth:sanctum'])->prefix('buyer')->group(function () {
@@ -91,12 +92,7 @@ Route::middleware(['auth:sanctum'])->prefix('buyer')->group(function () {
 
 // Métodos de pago unificados (no-MVP eliminados)
 
-// Commerce routes
-Route::prefix('commerce')->middleware(['auth:sanctum', 'role:commerce'])->group(function () {
-    Route::get('/orders', [CommerceOrderController::class, 'index']);
-    Route::get('/orders/{order}', [CommerceOrderController::class, 'show']);
-    Route::put('/orders/{order}/status', [CommerceOrderController::class, 'updateStatus']);
-});
+// Commerce routes (MVP): autorización dentro del controlador por commerce_id
 
 // Rutas protegidas
 Route::middleware('auth:sanctum')->group(function () {
