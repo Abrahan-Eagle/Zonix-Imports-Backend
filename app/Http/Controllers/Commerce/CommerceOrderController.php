@@ -54,7 +54,7 @@ class CommerceOrderController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        return response()->json($order->load(['profile.user', 'orderItems.product', 'orderDelivery']));
+        return response()->json($order->load(['profile.user', 'orderItems.product']));
     }
 
     /**
