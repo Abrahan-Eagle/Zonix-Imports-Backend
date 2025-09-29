@@ -23,12 +23,14 @@ use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\ReferralController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\PaymentGatewayController;
+use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\PaymentMethodController;
 
 // Endpoint público de salud
 Route::get('/ping', fn() => response()->json(['message' => 'API funcionando']));
 
-// Broadcasting auth route (for Laravel Broadcasting) - requiere autenticación
-Route::post('/broadcasting/auth', [BroadcastingController::class, 'authenticate'])->middleware('auth:sanctum');
+// Broadcasting auth route (for Laravel Broadcasting) - requiere autenticación (NO-MVP)
+// Route::post('/broadcasting/auth', [BroadcastingController::class, 'authenticate'])->middleware('auth:sanctum');
 
 // Rutas públicas para órdenes (sin autenticación para tests)
 // (Desactivado) Estas rutas deben ser protegidas, los tests ya validan buyer con token
@@ -49,15 +51,19 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-// WebSocket routes
-Route::prefix('websocket')->group(function () {
-    Route::post('/connect', [WebSocketController::class, 'connect']);
-    Route::post('/disconnect', [WebSocketController::class, 'disconnect']);
-    Route::post('/subscribe', [WebSocketController::class, 'subscribe']);
-    Route::post('/unsubscribe', [WebSocketController::class, 'unsubscribe']);
-    Route::post('/auth', [WebSocketController::class, 'authenticate']);
-});
+// WebSocket routes (NO-MVP - comentado para MVP)
+// Route::prefix('websocket')->group(function () {
+//     Route::post('/connect', [WebSocketController::class, 'connect']);
+//     Route::post('/disconnect', [WebSocketController::class, 'disconnect']);
+//     Route::post('/subscribe', [WebSocketController::class, 'subscribe']);
+//     Route::post('/unsubscribe', [WebSocketController::class, 'unsubscribe']);
+//     Route::post('/auth', [WebSocketController::class, 'authenticate']);
+// });
 
+
+// Endpoints públicos MVP
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/categories/{id}', [CategoryController::class, 'show']);
 
 // Buyer routes (no-MVP eliminadas)
 // MVP: Endpoints mínimos adicionales
@@ -71,6 +77,8 @@ Route::prefix('referrals')->middleware('auth:sanctum')->group(function () {
 
 // Checkout y Pagos (MVP)
 Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('auth:sanctum');
+Route::get('/payments/methods', [PaymentMethodController::class, 'index'])->middleware('auth:sanctum');
+Route::put('/payments/methods', [PaymentMethodController::class, 'update'])->middleware('auth:sanctum');
 // Específico primero para evitar colisión con el comodín
 Route::post('/payments/comprobante', [PaymentGatewayController::class, 'comprobante'])->middleware('auth:sanctum');
 Route::post('/payments/{provider}', [PaymentGatewayController::class, 'apiPayment'])->middleware('auth:sanctum');
@@ -84,6 +92,7 @@ Route::middleware(['auth:sanctum'])->prefix('buyer')->group(function () {
     // Orders
     Route::get('/orders', [BuyerOrderController::class, 'index']);
     Route::post('/orders', [BuyerOrderController::class, 'store']);
+    Route::get('/orders/{id}/tracking', [BuyerOrderController::class, 'tracking']);
 
     // Products
     Route::get('/products', [\App\Http\Controllers\Buyer\ProductController::class, 'index']);

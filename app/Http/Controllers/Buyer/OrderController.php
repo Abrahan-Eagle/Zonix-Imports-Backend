@@ -136,6 +136,128 @@ class OrderController extends Controller
     }
 
     /**
+     * Obtener información de seguimiento de una orden
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function tracking($id)
+    {
+        try {
+            $user = Auth::user();
+            $profile = $user->profile;
+            
+            if (!$profile) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Perfil no encontrado'
+                ], 404);
+            }
+
+            $order = \App\Models\Order::where('profile_id', $profile->id)
+                ->with(['profile.user', 'commerce', 'orderItems.product', 'payments'])
+                ->findOrFail($id);
+
+            // Información de seguimiento
+            $tracking = [
+                'order_id' => $order->id,
+                'status' => $order->status,
+                'tracking_number' => $order->tracking_number,
+                'estimated_delivery' => $order->estimated_delivery,
+                'created_at' => $order->created_at,
+                'commerce_name' => $order->commerce->business_name ?? 'N/A',
+                'total' => $order->total,
+                'payment_status' => $order->payments->where('status', 'completed')->isNotEmpty() ? 'paid' : 'pending',
+                'delivery_type' => $order->delivery_type,
+                'shipping_address' => $order->shippingAddress,
+                'notes' => $order->notes,
+                'timeline' => $this->generateOrderTimeline($order)
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Información de seguimiento obtenida',
+                'data' => $tracking
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Orden no encontrada'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener seguimiento: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generar timeline de la orden
+     */
+    private function generateOrderTimeline($order)
+    {
+        $timeline = [];
+        
+        // Orden creada
+        $timeline[] = [
+            'status' => 'created',
+            'title' => 'Orden creada',
+            'description' => 'Tu orden ha sido creada exitosamente',
+            'date' => $order->created_at,
+            'completed' => true
+        ];
+
+        // Pago
+        $payment = $order->payments->where('status', 'completed')->first();
+        if ($payment) {
+            $timeline[] = [
+                'status' => 'paid',
+                'title' => 'Pago confirmado',
+                'description' => 'El pago ha sido procesado exitosamente',
+                'date' => $payment->processed_at,
+                'completed' => true
+            ];
+        }
+
+        // Procesamiento
+        if (in_array($order->status, ['processing', 'preparing', 'shipped', 'delivered'])) {
+            $timeline[] = [
+                'status' => 'processing',
+                'title' => 'Procesando',
+                'description' => 'El vendedor está preparando tu pedido',
+                'date' => $order->updated_at,
+                'completed' => true
+            ];
+        }
+
+        // Enviado
+        if (in_array($order->status, ['shipped', 'delivered']) && $order->tracking_number) {
+            $timeline[] = [
+                'status' => 'shipped',
+                'title' => 'Enviado',
+                'description' => 'Tu pedido ha sido enviado. Número de seguimiento: ' . $order->tracking_number,
+                'date' => $order->updated_at,
+                'completed' => true,
+                'tracking_number' => $order->tracking_number
+            ];
+        }
+
+        // Entregado
+        if ($order->status === 'delivered') {
+            $timeline[] = [
+                'status' => 'delivered',
+                'title' => 'Entregado',
+                'description' => 'Tu pedido ha sido entregado exitosamente',
+                'date' => $order->updated_at,
+                'completed' => true
+            ];
+        }
+
+        return $timeline;
+    }
+
+    /**
      * Muestra los detalles de una orden específica.
      * @param $id
      * @return \Illuminate\Http\JsonResponse
