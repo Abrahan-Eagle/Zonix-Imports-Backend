@@ -94,7 +94,11 @@ Route::middleware(['auth:sanctum'])->prefix('buyer')->group(function () {
 
     // Products
     Route::get('/products', [\App\Http\Controllers\Buyer\ProductController::class, 'index']);
+    Route::get('/products/featured', [\App\Http\Controllers\Buyer\ProductController::class, 'featured']);
+    Route::get('/products/search', [\App\Http\Controllers\Buyer\ProductController::class, 'search']);
+    Route::get('/products/brands', [\App\Http\Controllers\Buyer\ProductController::class, 'brands']);
     Route::get('/products/{id}', [\App\Http\Controllers\Buyer\ProductController::class, 'show']);
+    Route::get('/products/{id}/related', [\App\Http\Controllers\Buyer\ProductController::class, 'related']);
 });
 
 // Métodos de pago unificados (no-MVP eliminados)
