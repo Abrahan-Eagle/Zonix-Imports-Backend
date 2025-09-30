@@ -47,10 +47,10 @@ class ProductController extends Controller
 
             // Filtro por rango de precio
             if ($request->has('min_price')) {
-                $query->where('price', '>=', $request->get('min_price'));
+                $query->where('base_price', '>=', $request->get('min_price'));
             }
             if ($request->has('max_price')) {
-                $query->where('price', '<=', $request->get('max_price'));
+                $query->where('base_price', '<=', $request->get('max_price'));
             }
 
             // Ordenamiento

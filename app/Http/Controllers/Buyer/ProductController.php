@@ -82,15 +82,29 @@ class ProductController extends Controller
             }
             
             if ($request->has('min_price')) {
-                $query->where('price', '>=', $request->min_price);
+                $query->where('base_price', '>=', $request->min_price);
             }
             
             if ($request->has('max_price')) {
-                $query->where('price', '<=', $request->max_price);
+                $query->where('base_price', '<=', $request->max_price);
             }
             
             if ($request->has('in_stock') && $request->in_stock) {
                 $query->where('stock', '>', 0);
+            }
+            
+            if ($request->has('brand') && $request->brand) {
+                $query->where('modality', $request->brand);
+            }
+            
+            if ($request->has('modalities') && $request->modalities) {
+                $modalities = is_array($request->modalities) ? $request->modalities : explode(',', $request->modalities);
+                $query->whereIn('modality', $modalities);
+            }
+            
+            if ($request->has('has_discount') && $request->has_discount) {
+                $query->whereNotNull('wholesale_price')
+                      ->where('wholesale_price', '>', 0);
             }
             
             // Aplicar paginación
