@@ -203,7 +203,7 @@ class PaymentService
             $payment->update([
                 'reference' => $orderId,
                 'external_id' => $orderId,
-                'currency' => $data['crypto_currency'] ?? 'USDT',
+                'currency' => 'USD', // Currency en USD, crypto en metadata
                 'metadata' => json_encode(array_merge(
                     json_decode($payment->metadata, true) ?? [],
                     [
@@ -384,15 +384,17 @@ class PaymentService
             // TODO: Implementar reembolso real según el método
             // Por ahora solo actualizamos el estado
 
+            $currentMetadata = $payment->metadata ?? [];
+
             $payment->update([
                 'status' => 'refunded',
-                'metadata' => json_encode(array_merge(
-                    json_decode($payment->metadata, true) ?? [],
+                'metadata' => array_merge(
+                    $currentMetadata,
                     [
                         'refunded_at' => now()->toIso8601String(),
                         'refund_amount' => $refundAmount
                     ]
-                ))
+                )
             ]);
 
             // Actualizar estado de la orden si es necesario
@@ -432,7 +434,9 @@ class PaymentService
     {
         // Obtener métodos habilitados por el comercio
         $commerce = $order->commerce;
-        $commerceMethods = $commerce->payment_methods ?? [];
+        $commerceMethods = is_array($commerce->payment_methods) 
+            ? $commerce->payment_methods 
+            : json_decode($commerce->payment_methods ?? '[]', true);
 
         $allMethods = [
             'stripe' => [

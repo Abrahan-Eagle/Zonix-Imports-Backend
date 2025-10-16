@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Buyer;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\InitiatePaymentRequest;
+use App\Http\Requests\ManualPaymentRequest;
 use App\Services\PaymentService;
 use App\Models\Order;
 use App\Models\Payment;
@@ -86,17 +88,12 @@ class PaymentController extends Controller
      * POST /api/buyer/payments/initiate
      * Body: { order_id, payment_method, currency?, ... }
      * 
-     * @param Request $request
+     * @param InitiatePaymentRequest $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function initiate(Request $request)
+    public function initiate(InitiatePaymentRequest $request)
     {
         try {
-            $request->validate([
-                'order_id' => 'required|integer|exists:orders,id',
-                'payment_method' => 'required|in:stripe,paypal,binance,pago_movil,zelle',
-                'currency' => 'nullable|string|size:3'
-            ]);
 
             $order = Order::with('commerce')->find($request->order_id);
 
@@ -163,21 +160,12 @@ class PaymentController extends Controller
      * POST /api/buyer/payments/manual
      * Body: { order_id, payment_method, receipt_url, reference?, bank?, phone?, account? }
      * 
-     * @param Request $request
+     * @param ManualPaymentRequest $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function manual(Request $request)
+    public function manual(ManualPaymentRequest $request)
     {
         try {
-            $request->validate([
-                'order_id' => 'required|integer|exists:orders,id',
-                'payment_method' => 'required|in:pago_movil,zelle',
-                'receipt_url' => 'required|string',
-                'reference' => 'nullable|string|max:50',
-                'bank' => 'nullable|string|max:100',
-                'phone' => 'nullable|string|max:20',
-                'account' => 'nullable|string|max:50'
-            ]);
 
             $order = Order::with('commerce')->find($request->order_id);
 
