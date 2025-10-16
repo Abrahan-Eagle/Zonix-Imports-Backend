@@ -113,9 +113,9 @@ Route::middleware(['auth:sanctum'])->prefix('buyer')->group(function () {
     Route::get('/payments/{id}/status', [\App\Http\Controllers\Buyer\PaymentController::class, 'status']);
 
     // Orders
-    Route::get('/orders', [BuyerOrderController::class, 'index']);
-    Route::post('/orders', [BuyerOrderController::class, 'store']);
-    Route::get('/orders/{id}/tracking', [BuyerOrderController::class, 'tracking']);
+    Route::get('/orders', [\App\Http\Controllers\Buyer\OrderController::class, 'index']);
+    Route::get('/orders/{id}', [\App\Http\Controllers\Buyer\OrderController::class, 'show']);
+    Route::get('/orders/{id}/tracking', [\App\Http\Controllers\Buyer\OrderController::class, 'tracking']);
 
     // Products
     Route::get('/products', [\App\Http\Controllers\Buyer\ProductController::class, 'index']);
@@ -124,6 +124,14 @@ Route::middleware(['auth:sanctum'])->prefix('buyer')->group(function () {
     Route::get('/products/brands', [\App\Http\Controllers\Buyer\ProductController::class, 'brands']);
     Route::get('/products/{id}', [\App\Http\Controllers\Buyer\ProductController::class, 'show']);
     Route::get('/products/{id}/related', [\App\Http\Controllers\Buyer\ProductController::class, 'related']);
+});
+
+// Seller routes
+Route::middleware(['auth:sanctum'])->prefix('seller')->group(function () {
+    // Orders
+    Route::get('/orders', [\App\Http\Controllers\Seller\OrderController::class, 'index']);
+    Route::get('/orders/{id}', [\App\Http\Controllers\Seller\OrderController::class, 'show']);
+    Route::put('/orders/{id}/status', [\App\Http\Controllers\Seller\OrderController::class, 'updateStatus']);
 });
 
 // Métodos de pago unificados (no-MVP eliminados)

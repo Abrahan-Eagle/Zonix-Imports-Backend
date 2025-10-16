@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Buyer;
+namespace App\Http\Controllers\Seller;
 
 use App\Http\Controllers\Controller;
 use App\Services\OrderService;
@@ -18,9 +18,9 @@ class OrderController extends Controller
     }
 
     /**
-     * Listar órdenes del comprador
+     * Listar órdenes del vendedor
      * 
-     * GET /api/buyer/orders?status=X&modality=Y&page=1
+     * GET /api/seller/orders?status=X&delivery_type=Y&page=1
      * 
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -39,11 +39,11 @@ class OrderController extends Controller
 
             $filters = [
                 'status' => $request->query('status'),
-                'modality' => $request->query('modality'),
+                'delivery_type' => $request->query('delivery_type'),
                 'per_page' => $request->query('per_page', 15)
             ];
 
-            $orders = $this->orderService->getBuyerOrders($profile, $filters);
+            $orders = $this->orderService->getSellerOrders($profile, $filters);
 
             return response()->json([
                 'success' => true,
@@ -56,9 +56,10 @@ class OrderController extends Controller
                             'modality' => $order->modality,
                             'delivery_type' => $order->delivery_type,
                             'total' => (float) $order->total,
-                            'commerce' => [
-                                'id' => $order->commerce->id,
-                                'name' => $order->commerce->business_name
+                            'buyer' => [
+                                'id' => $order->profile->id,
+                                'name' => $order->profile->firstName . ' ' . $order->profile->lastName,
+                                'email' => $order->profile->user->email ?? null
                             ],
                             'items_count' => $order->orderItems->count(),
                             'created_at' => $order->created_at->format('Y-m-d H:i:s')
@@ -74,19 +75,19 @@ class OrderController extends Controller
             ]);
 
         } catch (Exception $e) {
-            Log::error('Error al listar órdenes: ' . $e->getMessage());
+            Log::error('Error al listar órdenes (seller): ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al listar órdenes',
+                'message' => $e->getMessage(),
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
 
     /**
-     * Obtener detalle de una orden
+     * Obtener detalle de una orden (seller)
      * 
-     * GET /api/buyer/orders/{id}
+     * GET /api/seller/orders/{id}
      * 
      * @param Request $request
      * @param int $id
@@ -104,7 +105,7 @@ class OrderController extends Controller
                 ], 404);
             }
 
-            $order = $this->orderService->getBuyerOrderDetail($id, $profile);
+            $order = $this->orderService->getSellerOrderDetail($id, $profile);
 
             return response()->json([
                 'success' => true,
@@ -122,10 +123,11 @@ class OrderController extends Controller
                         'tracking_number' => $order->tracking_number,
                         'estimated_delivery' => $order->estimated_delivery?->format('Y-m-d'),
                         'notes' => $order->notes,
-                        'commerce' => [
-                            'id' => $order->commerce->id,
-                            'name' => $order->commerce->business_name,
-                            'phone' => $order->commerce->phone
+                        'buyer' => [
+                            'id' => $order->profile->id,
+                            'name' => $order->profile->firstName . ' ' . $order->profile->lastName,
+                            'email' => $order->profile->user->email ?? null,
+                            'phone' => $order->profile->phone
                         ],
                         'shipping_address' => [
                             'street' => $order->shippingAddress->street,
@@ -144,7 +146,8 @@ class OrderController extends Controller
                                 'product' => [
                                     'id' => $item->product->id,
                                     'name' => $item->product->name,
-                                    'image' => $item->product->image
+                                    'image' => $item->product->image,
+                                    'sku' => $item->product->sku
                                 ],
                                 'quantity' => $item->quantity,
                                 'unit_price' => (float) $item->unit_price,
@@ -157,6 +160,8 @@ class OrderController extends Controller
                                 'method' => $payment->method,
                                 'amount' => (float) $payment->amount,
                                 'status' => $payment->status,
+                                'reference' => $payment->reference,
+                                'receipt_url' => $payment->receipt_url,
                                 'processed_at' => $payment->processed_at?->format('Y-m-d H:i:s')
                             ];
                         }),
@@ -167,7 +172,7 @@ class OrderController extends Controller
             ]);
 
         } catch (Exception $e) {
-            Log::error('Error al obtener detalle de orden: ' . $e->getMessage());
+            Log::error('Error al obtener detalle de orden (seller): ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
@@ -177,17 +182,23 @@ class OrderController extends Controller
     }
 
     /**
-     * Obtener tracking de una orden
+     * Actualizar estado de la orden (seller)
      * 
-     * GET /api/buyer/orders/{id}/tracking
+     * PUT /api/seller/orders/{id}/status
+     * Body: { status, tracking_number? }
      * 
      * @param Request $request
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function tracking(Request $request, int $id)
+    public function updateStatus(Request $request, int $id)
     {
         try {
+            $request->validate([
+                'status' => 'required|in:paid,preparing,on_way,delivered,cancelled',
+                'tracking_number' => 'nullable|string|max:100'
+            ]);
+
             $profile = $request->user()->profile;
 
             if (!$profile) {
@@ -197,20 +208,35 @@ class OrderController extends Controller
                 ], 404);
             }
 
-            $tracking = $this->orderService->getOrderTracking($id, $profile);
+            $order = $this->orderService->updateOrderStatus(
+                $id,
+                $profile,
+                $request->status,
+                $request->tracking_number
+            );
 
             return response()->json([
                 'success' => true,
-                'data' => $tracking
+                'message' => 'Estado de orden actualizado',
+                'data' => [
+                    'order' => [
+                        'id' => $order->id,
+                        'order_number' => 'ORD-' . str_pad($order->id, 6, '0', STR_PAD_LEFT),
+                        'status' => $order->status,
+                        'tracking_number' => $order->tracking_number,
+                        'updated_at' => $order->updated_at->format('Y-m-d H:i:s')
+                    ]
+                ]
             ]);
 
         } catch (Exception $e) {
-            Log::error('Error al obtener tracking: ' . $e->getMessage());
+            Log::error('Error al actualizar estado de orden: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
                 'error' => config('app.debug') ? $e->getTraceAsString() : null
-            ], $e->getMessage() === 'Orden no encontrada' ? 404 : 403);
+            ], 400);
         }
     }
 }
+
