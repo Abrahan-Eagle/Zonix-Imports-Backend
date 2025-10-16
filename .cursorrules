@@ -217,21 +217,113 @@ rules:
 
   - type: tasks
     value: |
-      Roadmap Backend (MVP):
-      - Semana 1:
-        * Infraestructura y base de proyecto (Laravel)
-        * Migraciones base y seeders
-        * Login con Google OAuth2 + Sanctum
-      - Semana 2:
-        * API de productos y catálogo (paginado)
-        * Carrito, Checkout y creación de pedidos
-      - Semana 3:
-        * Publicación y modalidades (mayor, pre-order, referidos, dropshipping)
-        * Inventario del vendedor y gestión de pedidos
-        * Webhooks de pagos (Stripe/PayPal/Binance)
-      - Semana 4:
-        * Panel de administración mínimo
-        * QA (tests) y deploy
-        * Monitoreo básico y backup
+      Roadmap Backend (Aplicación Completa - 38 días):
+      
+      ✅ COMPLETADO (Semana 1-2):
+      - Infraestructura Laravel 10 + MySQL 8
+      - Migraciones completas (26 tablas)
+      - Seeders y factories
+      - Login Google OAuth2 + Sanctum
+      - API Productos con filtros avanzados
+      - API Tiendas/Comercios
+      - API Categorías
+      - Carrito (endpoints listos)
+      - Checkout (endpoint listo)
+      
+      🔄 EN DESARROLLO (Orden lineal):
+      
+      Fase 2 (3 días): Carrito & Checkout
+      - Validaciones completas
+      - Tests exhaustivos
+      
+      Fase 3 (4 días): Pagos Completos
+      - Stripe SDK + webhooks
+      - PayPal SDK + webhooks
+      - Binance Pay API
+      - Pago Móvil/Zelle + OCR
+      - Sistema idempotente
+      
+      Fase 4 (2 días): Pedidos & Tracking
+      - Estados mejorados
+      - Sistema de notificaciones
+      - Tracking avanzado
+      
+      Fase 5 (3 días): Reviews/Calificaciones
+      - Sistema intermedio
+      - Subir fotos
+      - Respuesta vendedor
+      - Reportes
+      
+      Fase 6 (4 días): Chat Tiempo Real
+      - Pusher configurado
+      - Mensajes + imágenes
+      - Typing indicators
+      - Visto/no visto
+      
+      Fase 7 (2 días): Notificaciones Push
+      - Pusher Beams
+      - Eventos del sistema
+      - Preferencias usuario
+      
+      Fase 8 (3 días): Programa Referidos
+      - Sistema multinivel
+      - Códigos descuento
+      - Ranking
+      - Retiros
+      
+      Fase 9 (1 día): Wishlist Backend
+      - Sincronización
+      - Alertas precio
+      - Compartir
+      
+      Fase 10 (2 días): Búsqueda Avanzada
+      - Autocompletado
+      - Full-text search
+      - Historial
+      - Sugerencias
+      
+      Fase 11 (2 días): Pre-order Avanzado
+      - Sistema abonos
+      - Recordatorios auto
+      - Penalización
+      
+      Fase 12 (2 días): Dropshipping Auto
+      - Liquidación automática
+      - Sistema aprobación
+      - Dashboard
+      
+      Fase 13 (2 días): Seguridad/KYC
+      - Verificación vendedores
+      - Anti-fraude
+      - Blacklist
+      
+      Fase 14 (1 día): OCR Comprobantes
+      - Google Cloud Vision
+      - Extracción datos
+      - Validación
+      
+      Fase 15 (1 día): Multi-moneda
+      - USD/VES/USDT
+      - Tasas API
+      - Conversión auto
+      
+      Fase 16 (3 días): Testing Exhaustivo
+      - Unit (100% coverage)
+      - Feature (todos endpoints)
+      - Integration (E2E)
+      - Performance
+      - Security
+      
+      Fase 17 (2 días): Deploy Producción
+      - Optimización
+      - CI/CD
+      - Monitoring
+      - Backups
+      
+      📌 POST-MVP (Fase 2):
+      - Admin Dashboard completo
+      - Analytics avanzado
+      - Cupones/Descuentos
+      - Reportes avanzados
 
 
