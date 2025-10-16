@@ -83,6 +83,12 @@ Route::prefix('referrals')->middleware('auth:sanctum')->group(function () {
 Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('auth:sanctum');
 Route::get('/payments/methods', [PaymentMethodController::class, 'index'])->middleware('auth:sanctum');
 Route::put('/payments/methods', [PaymentMethodController::class, 'update'])->middleware('auth:sanctum');
+// Cart items (fuera de /buyer para REST estándar)
+Route::middleware('auth:sanctum')->prefix('cart')->group(function () {
+    Route::put('/{cartItemId}', [\App\Http\Controllers\Buyer\CartController::class, 'update']);
+    Route::delete('/{cartItemId}', [\App\Http\Controllers\Buyer\CartController::class, 'destroy']);
+});
+
 // Específico primero para evitar colisión con el comodín
 Route::post('/payments/comprobante', [PaymentGatewayController::class, 'comprobante'])->middleware('auth:sanctum');
 Route::post('/payments/{provider}', [PaymentGatewayController::class, 'apiPayment'])->middleware('auth:sanctum');
@@ -92,6 +98,8 @@ Route::middleware(['auth:sanctum'])->prefix('buyer')->group(function () {
     // Cart
     Route::post('/cart/add', [\App\Http\Controllers\Buyer\CartController::class, 'add']);
     Route::get('/cart', [\App\Http\Controllers\Buyer\CartController::class, 'show']);
+    Route::get('/cart/validate', [\App\Http\Controllers\Buyer\CartController::class, 'validateStock']);
+    Route::delete('/cart', [\App\Http\Controllers\Buyer\CartController::class, 'clear']);
 
     // Orders
     Route::get('/orders', [BuyerOrderController::class, 'index']);
