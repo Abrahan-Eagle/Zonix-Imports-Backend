@@ -120,6 +120,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [ProfileController::class, 'index']);
         Route::post('/', [ProfileController::class, 'store']);
         // Rutas no-MVP removidas: delivery-agent, commerce (legacy), delivery-company
+        Route::get('/user/{userId}', [ProfileController::class, 'getByUserId']); // Obtener perfil por user_id
         Route::get('/{id}', [ProfileController::class, 'show']);
         Route::post('/{id}', [ProfileController::class, 'update']);
         Route::delete('/{id}', [ProfileController::class, 'destroy']);

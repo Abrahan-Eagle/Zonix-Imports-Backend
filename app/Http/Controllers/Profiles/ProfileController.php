@@ -98,6 +98,20 @@ class ProfileController extends Controller
 
         return response()->json($profile);
     }
+
+    /**
+     * Obtener perfil por user_id.
+     */
+    public function getByUserId($userId)
+    {
+        $profile = Profile::with(['user', 'addresses'])->where('user_id', $userId)->first();
+
+        if (!$profile) {
+            return response()->json(['message' => 'Perfil no encontrado para este usuario'], 404);
+        }
+
+        return response()->json($profile);
+    }
     public function update(Request $request, $id)
 {
     // Buscar el perfil por ID o devolver error 404.
