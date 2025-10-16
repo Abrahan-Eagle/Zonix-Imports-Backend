@@ -101,6 +101,11 @@ Route::middleware(['auth:sanctum'])->prefix('buyer')->group(function () {
     Route::get('/cart/validate', [\App\Http\Controllers\Buyer\CartController::class, 'validateStock']);
     Route::delete('/cart', [\App\Http\Controllers\Buyer\CartController::class, 'clear']);
 
+    // Checkout
+    Route::get('/checkout/summary', [\App\Http\Controllers\Buyer\CheckoutController::class, 'summary']);
+    Route::post('/checkout/initiate', [\App\Http\Controllers\Buyer\CheckoutController::class, 'initiate']);
+    Route::post('/checkout/confirm', [\App\Http\Controllers\Buyer\CheckoutController::class, 'confirm']);
+
     // Orders
     Route::get('/orders', [BuyerOrderController::class, 'index']);
     Route::post('/orders', [BuyerOrderController::class, 'store']);
