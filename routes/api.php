@@ -63,6 +63,12 @@ Route::prefix('auth')->group(function () {
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{id}', [CategoryController::class, 'show']);
 
+// Tiendas/Comercios (público)
+Route::get('/commerces', [\App\Http\Controllers\Api\CommerceController::class, 'index']);
+Route::get('/commerces/{id}', [\App\Http\Controllers\Api\CommerceController::class, 'show']);
+Route::get('/commerces/{id}/products', [\App\Http\Controllers\Api\CommerceController::class, 'products']);
+Route::get('/business-types', [\App\Http\Controllers\Api\CommerceController::class, 'businessTypes']);
+
 // Buyer routes (no-MVP eliminadas)
 // MVP: Endpoints mínimos adicionales
 Route::post('/products/{id}/images', [ProductImageController::class, 'store'])->middleware('auth:sanctum');
@@ -157,6 +163,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/orders', [CommerceOrderController::class, 'index']);
         Route::put('/orders/{id}/status', [CommerceOrderController::class, 'updateStatus']);
     });
+
+    // Mi Tienda (vendedor autenticado)
+    Route::get('/my-commerce', [\App\Http\Controllers\Api\CommerceController::class, 'myCommerce']);
+    Route::put('/my-commerce/toggle', [\App\Http\Controllers\Api\CommerceController::class, 'toggleStatus']);
 
     // Delivery (no-MVP eliminado)
 

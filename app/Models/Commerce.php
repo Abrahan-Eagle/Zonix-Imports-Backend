@@ -69,4 +69,28 @@ class Commerce extends Model
     {
         return $this->hasManyThrough(Payment::class, Order::class, 'commerce_id', 'order_id');
     }
+
+    /**
+     * Scope para tiendas verificadas
+     */
+    public function scopeVerified($query)
+    {
+        return $query->where('is_verified', true);
+    }
+
+    /**
+     * Scope para tiendas abiertas
+     */
+    public function scopeOpen($query)
+    {
+        return $query->where('open', true);
+    }
+
+    /**
+     * Scope para búsqueda por nombre
+     */
+    public function scopeSearch($query, $search)
+    {
+        return $query->where('business_name', 'LIKE', "%{$search}%");
+    }
 }
