@@ -79,10 +79,10 @@ Route::prefix('referrals')->middleware('auth:sanctum')->group(function () {
     Route::get('/stats', [ReferralController::class, 'stats']);
 });
 
-// Checkout y Pagos (MVP)
-Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('auth:sanctum');
-Route::get('/payments/methods', [PaymentMethodController::class, 'index'])->middleware('auth:sanctum');
-Route::put('/payments/methods', [PaymentMethodController::class, 'update'])->middleware('auth:sanctum');
+// Webhooks (sin autenticación - verificación por firma)
+Route::post('/webhooks/stripe', [\App\Http\Controllers\WebhookController::class, 'stripe']);
+Route::post('/webhooks/paypal', [\App\Http\Controllers\WebhookController::class, 'paypal']);
+Route::post('/webhooks/binance', [\App\Http\Controllers\WebhookController::class, 'binance']);
 // Cart items (fuera de /buyer para REST estándar)
 Route::middleware('auth:sanctum')->prefix('cart')->group(function () {
     Route::put('/{cartItemId}', [\App\Http\Controllers\Buyer\CartController::class, 'update']);
@@ -105,6 +105,12 @@ Route::middleware(['auth:sanctum'])->prefix('buyer')->group(function () {
     Route::get('/checkout/summary', [\App\Http\Controllers\Buyer\CheckoutController::class, 'summary']);
     Route::post('/checkout/initiate', [\App\Http\Controllers\Buyer\CheckoutController::class, 'initiate']);
     Route::post('/checkout/confirm', [\App\Http\Controllers\Buyer\CheckoutController::class, 'confirm']);
+
+    // Payments
+    Route::get('/payments/methods', [\App\Http\Controllers\Buyer\PaymentController::class, 'methods']);
+    Route::post('/payments/initiate', [\App\Http\Controllers\Buyer\PaymentController::class, 'initiate']);
+    Route::post('/payments/manual', [\App\Http\Controllers\Buyer\PaymentController::class, 'manual']);
+    Route::get('/payments/{id}/status', [\App\Http\Controllers\Buyer\PaymentController::class, 'status']);
 
     // Orders
     Route::get('/orders', [BuyerOrderController::class, 'index']);
