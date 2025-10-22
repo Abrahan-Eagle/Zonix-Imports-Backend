@@ -140,8 +140,8 @@ class CartServiceTest extends TestCase
     public function puede_obtener_carrito_con_items()
     {
         $profile = Profile::factory()->buyer()->create();
-        $product1 = Product::factory()->create(['base_price' => 10.00, 'stock' => 10]);
-        $product2 = Product::factory()->create(['base_price' => 20.00, 'stock' => 10]);
+        $product1 = Product::factory()->create(['base_price' => 10.00, 'stock' => 10, 'available' => true]);
+        $product2 = Product::factory()->create(['base_price' => 20.00, 'stock' => 10, 'available' => true]);
 
         $this->cartService->addItem($profile, $product1->id, 2, 'retail');
         $this->cartService->addItem($profile, $product2->id, 1, 'retail');
@@ -185,7 +185,7 @@ class CartServiceTest extends TestCase
     public function puede_eliminar_item()
     {
         $profile = Profile::factory()->buyer()->create();
-        $product = Product::factory()->create(['stock' => 10]);
+        $product = Product::factory()->create(['stock' => 10, 'available' => true]);
         
         $cartItem = $this->cartService->addItem($profile, $product->id, 2, 'retail');
 
@@ -246,7 +246,8 @@ class CartServiceTest extends TestCase
         $profile = Profile::factory()->buyer()->create();
         $product = Product::factory()->create([
             'base_price' => 150.00,
-            'stock' => 10
+            'stock' => 10,
+            'available' => true
         ]);
 
         $this->cartService->addItem($profile, $product->id, 1, 'retail');
